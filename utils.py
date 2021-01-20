@@ -6,7 +6,6 @@ from torchvision import transforms
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
 
-
 def download_data():
     """
         downloads the data and unzips, delete zip when finish
@@ -19,9 +18,8 @@ def download_data():
     os.system('rm celeba.zip')
 
 
-def resize(size, path):
+def images_preprocessing(size, path):
     """
-
     :param size: resize images to 3*size*size
     :param path: path to images folder
     """
@@ -29,12 +27,14 @@ def resize(size, path):
         os.makedirs(path + '_pt')
 
     files_names = os.listdir(path)
-    resize = transforms.Resize(size=(size, size))
+    transform = transforms.Compose([transforms.Resize(size=(size, size)),
+                                    transforms.ToTensor(),  # move to tensor and normalize to [0,1]
+                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])  # normalize to [-1,1]
+
     for file_name in files_names:
         img_path = os.path.join(path, file_name)
         image = Image.open(img_path).convert('RGB')
-        image = resize(image)
-        image = TF.to_tensor(image)
+        image = transform(image)
         save_path = os.path.join(path + '_pt', file_name.split('.')[0] + '.pt')
         torch.save(image, save_path)  # if we wish float16 >>> torch.save(image.to(dtype=torch.float16), save_path))
 
@@ -59,5 +59,5 @@ if __name__ == '__main__':
     # original images size == (178, 218)
     running_on_linux = 'Linux' in platform.platform()
     path = 'img_sample' if not running_on_linux else 'img_align_celeba'
-    resize(size=64, path=path)
+    images_preprocessing(size=64, path=path)
     # load_images(path + '_pt')
