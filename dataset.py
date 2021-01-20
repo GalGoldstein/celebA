@@ -36,7 +36,7 @@ class CelebDataset(Dataset):
 
 if __name__ == '__main__':
     running_on_linux = 'Linux' in platform.platform()
-    path = 'img_sample_pt' if not running_on_linux else 'img_align_celeba_pt'
+    path = 'img_sample_pt' if not running_on_linux else os.path.join('/home/student/HW3/celebA', 'img_align_celeba_pt')
     celeb_dataset = CelebDataset(path)
 
     batch_size = 6

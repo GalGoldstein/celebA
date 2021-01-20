@@ -20,6 +20,7 @@ import platform
 from torch.utils.data import DataLoader
 import utils
 
+
 def weights_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
@@ -29,12 +30,11 @@ def weights_init(m):
         nn.init.constant_(m.bias.data, 0)
 
 
-
 class Generator(nn.Module):
     def __init__(self, ngpu):
         super(Generator, self).__init__()
         self.ngpu = ngpu
-        self.main = nn.Sequential(
+        self.gen = nn.Sequential(
             # input is Z, going into a convolution
             nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0, bias=False),
             nn.BatchNorm2d(ngf * 8),
@@ -58,13 +58,14 @@ class Generator(nn.Module):
         )
 
     def forward(self, input):
-        return self.main(input)
+        return self.gen(input)
+
 
 class Discriminator(nn.Module):
     def __init__(self, ngpu):
         super(Discriminator, self).__init__()
         self.ngpu = ngpu
-        self.main = nn.Sequential(
+        self.dis = nn.Sequential(
             # input is (nc) x 64 x 64
             nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
@@ -86,9 +87,10 @@ class Discriminator(nn.Module):
         )
 
     def forward(self, input):
-        return self.main(input)
+        return self.dis(input)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # Set random seed for reproducibility
     manualSeed = 999
     # manualSeed = random.randint(1, 10000) # use if you want new results
@@ -98,7 +100,9 @@ if __name__ == '__main__':
 
     running_on_linux = 'Linux' in platform.platform()
 
-    dataroot = 'img_sample_pt' if not running_on_linux else 'img_align_celeba_pt' # Root directory for dataset
+    dataroot = 'img_sample_pt' if not running_on_linux else os.path.join('/home/student/HW3/celebA',
+                                                                         'img_align_celeba_pt')
+
     workers = 2  # Number of workers for dataloader
     batch_size = 128  # Batch size during training
     nc = 3  # Number of channels in the training images. For color images this is 3
@@ -110,7 +114,6 @@ if __name__ == '__main__':
     beta1 = 0.5  # Beta1 hyperparam for Adam optimizers
     ngpu = 1  # Number of GPUs available. Use 0 for CPU mode.
     device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
-
 
     #  RUN ONLY ONCE: preprocessing and convert images to tensors
     # preprocessing_path = 'img_sample' if not running_on_linux else 'img_align_celeba'
@@ -189,7 +192,7 @@ if __name__ == '__main__':
             ## Train with all-real batch
             netD.zero_grad()
             # Format batch
-            real_cpu = data[0].to(device)
+            real_cpu = data['images_tensor'].to(device)
             b_size = real_cpu.size(0)
             label = torch.full((b_size,), real_label, dtype=torch.float, device=device)
             # Forward pass real batch through D
@@ -260,7 +263,6 @@ if __name__ == '__main__':
     plt.legend()
     plt.show()
 
-
     # Visualization of G’s progression
     # %%capture
     fig = plt.figure(figsize=(8, 8))
@@ -269,7 +271,6 @@ if __name__ == '__main__':
     ani = animation.ArtistAnimation(fig, ims, interval=1000, repeat_delay=1000, blit=True)
 
     HTML(ani.to_jshtml())
-
 
     # Real Images vs. Fake Images
     # Grab a batch of real images from the dataloader
@@ -282,6 +283,7 @@ if __name__ == '__main__':
     plt.title("Real Images")
     plt.imshow(
         np.transpose(vutils.make_grid(real_batch[0].to(device)[:64], padding=5, normalize=True).cpu(), (1, 2, 0)))
+    plt.show()
 
     # Plot the fake images from the last epoch
     plt.subplot(1, 2, 2)

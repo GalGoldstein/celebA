@@ -6,6 +6,7 @@ from torchvision import transforms
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
 
+
 def download_data():
     """
         downloads the data and unzips, delete zip when finish
@@ -29,7 +30,7 @@ def images_preprocessing(size, path):
     files_names = os.listdir(path)
     transform = transforms.Compose([transforms.Resize(size=(size, size)),
                                     transforms.ToTensor(),  # move to tensor and normalize to [0,1]
-                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])  # normalize to [-1,1]
+                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])  # normalize to [-1,1]
 
     for file_name in files_names:
         img_path = os.path.join(path, file_name)
