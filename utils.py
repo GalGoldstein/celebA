@@ -46,7 +46,7 @@ def load_images(path):
     :param path: path to .pt images
     :return: all images as dictionary {'000001' : torch.tensor ...}
     """
-    files_names = os.listdir(path)
+    files_names = sorted(os.listdir(path))#[:1000] # TODO delete [:1000] and sorted
     all_images = dict()
     for file_name in files_names:
         image = torch.load(os.path.join(path, file_name))
