@@ -24,7 +24,7 @@ from dataset import CelebDataset
 
 def reverse_generator(G, images, nz=100, niter=1000):
     """
-        Get latent vectors for given images (Like going with the generator in the ooposite direction)
+        Get latent vectors for given images (Like going with the generator in the opposite direction)
         Done by MSE minimization min ||G(z)-Images||
     :param G: Generator, Pre-trained
     :param images: batch of images of size [batch_size, 3, 64, 64] or similar size
