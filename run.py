@@ -109,7 +109,7 @@ if __name__ == "__main__":
     nz = 100  # Size of z latent vector (i.e. size of generator input)
     ngf = 64  # Size of feature maps in generator
     ndf = 64  # Size of feature maps in discriminator
-    num_epochs = 30  # Number of training epochs
+    num_epochs = 1  # Number of training epochs
     lr = 0.0002  # Learning rate for optimizers
     beta1 = 0.5  # Beta1 hyperparam for Adam optimizers
     ngpu = 1  # Number of GPUs available. Use 0 for CPU mode.
@@ -239,7 +239,7 @@ if __name__ == "__main__":
             # Output training stats
             if i % 50 == 0:
                 print('[%d/%d][%d/%d]\tLoss_D: %.4f\tLoss_G: %.4f\tD(x): %.4f\tD(G(z)): %.4f / %.4f'
-                      % (epoch, num_epochs, i, len(dataloader),
+                      % (epoch+1, num_epochs, i, len(dataloader),
                          errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
 
             # Save Losses for plotting later
@@ -253,8 +253,8 @@ if __name__ == "__main__":
                 img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
 
             iters += 1
-    torch.save(netG, os.path.join('/home/student/HW3/celebA', f'netG_run2_{num_epochs}epochs'))
-    torch.save(netD, os.path.join('/home/student/HW3/celebA', f'netD_run2_{num_epochs}epochs'))
+    torch.save(netG, os.path.join('/home/student/HW3/celebA', f'netG_run3_{num_epochs}epochs'))
+    torch.save(netD, os.path.join('/home/student/HW3/celebA', f'netD_run3_{num_epochs}epochs'))
     # torch.cuda.empty_cache()
 
     plt.figure(figsize=(10, 5))
@@ -273,7 +273,10 @@ if __name__ == "__main__":
     ims = [[plt.imshow(np.transpose(i, (1, 2, 0)), animated=True)] for i in img_list]
     ani = animation.ArtistAnimation(fig, ims, interval=1000, repeat_delay=1000, blit=True)
 
-    HTML(ani.to_jshtml())
+    html_file = HTML(ani.to_jshtml()).data
+    text_file = open("html_output_file.html", "w")
+    text_file.write(f'{html_file}')
+    text_file.close()
 
     # Real Images vs. Fake Images
     # Grab a batch of real images from the dataloader
@@ -286,7 +289,7 @@ if __name__ == "__main__":
     plt.title("Real Images")
     plt.imshow(
         np.transpose(vutils.make_grid(real_batch['images_tensor'].to(device)[:64], padding=5, normalize=True).cpu(), (1, 2, 0)))
-    plt.show()
+    # plt.show()
 
 
     # Plot the fake images from the last epoch

@@ -21,6 +21,7 @@ import platform
 from torch.utils.data import DataLoader
 import utils
 from kmeans_pytorch import kmeans
+import pandas as pd
 
 device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
 manualSeed = 999
@@ -29,87 +30,104 @@ print("Random Seed: ", manualSeed)
 random.seed(manualSeed)
 torch.manual_seed(manualSeed)
 
-netG = torch.load(os.path.join('/home/student/HW3/celebA', 'netG_run1_5epochs')).to(device)
-netD = torch.load(os.path.join('/home/student/HW3/celebA', 'netD_run1_5epochs')).to(device)
+netG = torch.load(os.path.join('/home/student/HW3/celebA', 'netG_run2_30epochs')).to(device)
+netD = torch.load(os.path.join('/home/student/HW3/celebA', 'netD_run2_30epochs')).to(device)
 
-nz = 100
-amount = 64
-fixed_noise = torch.randn(amount, nz, 1, 1, device=device)
-fake = netG(fixed_noise)
+def get_attributes_file(path):
+    attr_dict = dict()  # {image_id: -1/1 vector for 41 attributes}
+    # txt_file = os.system(path)
+    file = open(path, "r")
+    for idx, line in enumerate(file):
+        if idx == 0:
+            continue
+        elif idx == 1:
+            header = line.split()
+        else:
+            attr_dict[line[:6]] = line.split()[1:]
 
-plt.figure(figsize=(8, 8))
-plt.axis("off")
-plt.title("Fake Images")
-plt.imshow(np.transpose(vutils.make_grid(fake.cpu().detach()[:64], padding=2, normalize=True).cpu(), (1, 2, 0)))
-plt.show()
+    return attr_dict, header
 
-# cluster fake images by their z random vectors
-num_clusters = 5
-fixed_noise = fixed_noise.reshape([amount, nz])  # reshape the noise
-cluster_ids_x, cluster_centers = kmeans(
-    X=fixed_noise, num_clusters=num_clusters, distance='euclidean', device=device)
+def plot_images(title, images, nrow=8):
+    plt.figure(figsize=(8, 8))
+    plt.axis("off")
+    plt.title(title)
+    plt.imshow(np.transpose(vutils.make_grid(images.cpu().detach()[:64], nrow=nrow,
+                                             padding=2, normalize=True).cpu(), (1, 2, 0)))
+    plt.show()
 
-# plot images in the same cluster
-# for cluster in range(num_clusters):
-#     fake_cluster_images = fake[(cluster_ids_x == cluster).nonzero().flatten()]
-#     plt.figure(figsize=(8, 8))
-#     plt.axis("off")
-#     plt.title(f'cluster={cluster} Images')
-#     plt.imshow(np.transpose(vutils.make_grid(fake_cluster_images.cpu().detach()[:64],
-#                                              padding=2, normalize=True).cpu(), (1, 2, 0)))
-#     plt.show()
+def get_difference_vector_between_groups(A_name, B_name, A_idx, B_idx, latent_vectors):
+    """
+    :param A_name: representative name for group A
+    :param B_name: representative name for group B
+    :param A_idx: list of indices of group A members, in the latent vectors tensors
+    :param B_idx: list of indices of group B members, in the latent vectors tensors
+    :param latent_vectors: aka fixed_noise, to reproduce the same fake images
+    :return: difference_vector: group_B - group_A
+    """
+    fake_images = netG(latent_vectors)
+    A_images = fake_images[A_idx]
+    B_images = fake_images[B_idx]
 
-men = [0, 1, 11, 14, 26, 32, 41, 43, 52, 58]
-women = [3, 9, 10, 12, 17, 19, 21, 24, 25, 28, 37, 38, 44, 47, 56, 57, 61, 62]
-men_images = fake[men]
-women_images = fake[women]
-plt.figure(figsize=(8, 8))
-plt.axis("off")
-plt.title("men fake images")
-plt.imshow(np.transpose(vutils.make_grid(men_images.cpu().detach()[:64], padding=2, normalize=True).cpu(), (1, 2, 0)))
-plt.show()
+    # plot_images(f'both groups fake images', fake_images)
+    # plot_images(f'{A_name} fake images', A_images)
+    # plot_images(f'{B_name} fake images', B_images)
 
-plt.axis("off")
-plt.title("women fake images")
-plt.imshow(np.transpose(vutils.make_grid(women_images.cpu().detach()[:64], padding=2, normalize=True).cpu(), (1, 2, 0)))
-plt.show()
+    A_average_vector = torch.mean(latent_vectors[A_idx], dim=0)
+    B_average_vector = torch.mean(latent_vectors[B_idx], dim=0)
+    difference_vector = B_average_vector - A_average_vector
 
-men_z_average = torch.mean(fixed_noise[men], dim=0)
-women_z_average = torch.mean(fixed_noise[women], dim=0)
-difference = women_z_average - men_z_average
+    A_to_B_images = netG((latent_vectors[A_idx] + difference_vector).reshape([-1, latent_vectors.shape[1], 1, 1]))
+    plot_images(f'{A_name} and {A_name}_to_{B_name} fake images', torch.cat((A_images, A_to_B_images),
+                                                                            dim=0), len(A_images))
 
-men_to_women = netG((fixed_noise[men] + difference).reshape([-1, nz, 1, 1]))
-plt.figure(figsize=(10, 10))
-plt.axis("off")
-plt.title("men & men_to_women")
-total_images_1 = torch.cat((men_images, men_to_women), dim=0)
-plt.imshow(np.transpose(vutils.make_grid(total_images_1.cpu().detach(),
-                                         padding=2, nrow=len(men_images), normalize=True).cpu(), (1, 2, 0)))
-plt.show()
+    B_to_A_images = netG((latent_vectors[B_idx] - difference_vector).reshape([-1, latent_vectors.shape[1], 1, 1]))
+    plot_images(f'{B_name} and {B_name}_to_{A_name} fake images', torch.cat((B_images, B_to_A_images),
+                                                                            dim=0), len(B_images))
+    return difference_vector
 
-women_to_men = netG((fixed_noise[women] - difference).reshape([-1, nz, 1, 1]))
-plt.figure(figsize=(10, 10))
-plt.axis("off")
-plt.title("women & women_to_men")
-total_images_2 = torch.cat((women_images, women_to_men), dim=0)
-plt.imshow(np.transpose(vutils.make_grid(total_images_2.cpu().detach(),
-                                         padding=2, nrow=len(women_images), normalize=True).cpu(), (1, 2, 0)))
-plt.show()
 
+
+
+if __name__ == "__main__":
+    attr_path = '/datashare/list_attr_celeba.txt'
+    attr_dict, header = get_attributes_file(attr_path)
+
+    attr_df = pd.DataFrame.from_dict(attr_dict, orient='index', columns=header)
+    for col in attr_df.columns:
+        attr_df[col] = pd.to_numeric(attr_df[col])
+
+    images_id_group_A = attr_df.index[attr_df['Male'] == 1].tolist()
+    images_id_group_B = attr_df.index[attr_df['Male'] == -1].tolist()
+
+    nz = 100
+    images_amount = 64
+    fixed_noise = torch.randn(images_amount, nz, 1, 1, device=device)  # used for plot the same fake images
+
+    # for run1_5epochs
+    # men = [0, 1, 11, 14, 26, 32, 41, 43, 52, 58]
+    # women = [3, 9, 10, 12, 17, 19, 21, 24, 25, 28, 37, 38, 44, 47, 56, 57, 61, 62]
+
+    # for run2_30epochs
+    men = [8, 9, 21, 23, 24, 30, 33, 37, 38, 41]
+    women = [1, 4, 5, 12, 14, 19, 25, 27, 28, 44, 59, 61]
+    get_difference_vector_between_groups("men", "women", men, women, fixed_noise)
+
+##################################################
 # TODO Ideas: \
-#  1. PCA to 2 dimensions, in order to see z latent spaces
 #  2. Vector aritmetic: try to differ between male and female, and get the difference vector
+#  7. how to define the discrete z?
+#  8. how to integrate the discrete and continuous z?
+
+
+
+#  1. PCA to 2 dimensions, in order to see z latent spaces
 #  3. train only on specific group (such as 'with glasses') and see if the results preserve it
 #  4. kmeans, KNN,
 #  5. Create the backword generator (image -> z, based on the generator with the current weights)
-#  6. How can we use ATTRIBUTES, IDENTITY, LANDMARKS in order to improve the model?
-#  7. how to define the discrete z?
-#  8. how to integrate the discrete and continous z?
+#  6. How can we use ATTRIBUTES, IDENTITY, LANDMARKS to get Z that present each characteristic?
+
 
 
 # TODO Actions and tries: \
 #  - run the model for longer time, to see if the fake images look better
 #  - improve model hyper parameters?
-
-
-
