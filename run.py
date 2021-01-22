@@ -109,7 +109,7 @@ if __name__ == "__main__":
     nz = 100  # Size of z latent vector (i.e. size of generator input)
     ngf = 64  # Size of feature maps in generator
     ndf = 64  # Size of feature maps in discriminator
-    num_epochs = 5  # Number of training epochs
+    num_epochs = 30  # Number of training epochs
     lr = 0.0002  # Learning rate for optimizers
     beta1 = 0.5  # Beta1 hyperparam for Adam optimizers
     ngpu = 1  # Number of GPUs available. Use 0 for CPU mode.
@@ -123,10 +123,10 @@ if __name__ == "__main__":
     dataloader = DataLoader(celeb_dataset, batch_size=batch_size, shuffle=True, drop_last=False)
 
     # real_batch = next(iter(dataloader))
-    # plt.figure(figsize=(2, 2))
+    # plt.figure(figsize=(8, 8))
     # plt.axis("off")
     # plt.title("Training Images")
-    # plt.imshow(np.transpose(vutils.make_grid(real_batch['images_tensor'].to(device)[:4],
+    # plt.imshow(np.transpose(vutils.make_grid(real_batch['images_tensor'].to(device)[:64],
     #                                          padding=2, normalize=True).cpu(), (1, 2, 0)))
     # plt.show()
 
@@ -253,6 +253,9 @@ if __name__ == "__main__":
                 img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
 
             iters += 1
+    torch.save(netG, os.path.join('/home/student/HW3/celebA', f'netG_run2_{num_epochs}epochs'))
+    torch.save(netD, os.path.join('/home/student/HW3/celebA', f'netD_run2_{num_epochs}epochs'))
+    # torch.cuda.empty_cache()
 
     plt.figure(figsize=(10, 5))
     plt.title("Generator and Discriminator Loss During Training")
@@ -282,8 +285,9 @@ if __name__ == "__main__":
     plt.axis("off")
     plt.title("Real Images")
     plt.imshow(
-        np.transpose(vutils.make_grid(real_batch[0].to(device)[:64], padding=5, normalize=True).cpu(), (1, 2, 0)))
+        np.transpose(vutils.make_grid(real_batch['images_tensor'].to(device)[:64], padding=5, normalize=True).cpu(), (1, 2, 0)))
     plt.show()
+
 
     # Plot the fake images from the last epoch
     plt.subplot(1, 2, 2)
@@ -291,3 +295,4 @@ if __name__ == "__main__":
     plt.title("Fake Images")
     plt.imshow(np.transpose(img_list[-1], (1, 2, 0)))
     plt.show()
+
