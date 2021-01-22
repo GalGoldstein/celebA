@@ -66,37 +66,34 @@ women_images = fake[women]
 plt.figure(figsize=(8, 8))
 plt.axis("off")
 plt.title("men fake images")
-plt.imshow(np.transpose(vutils.make_grid(men_images.cpu().detach()[:64],padding=2, normalize=True).cpu(), (1, 2, 0)))
+plt.imshow(np.transpose(vutils.make_grid(men_images.cpu().detach()[:64], padding=2, normalize=True).cpu(), (1, 2, 0)))
 plt.show()
-
 
 plt.axis("off")
 plt.title("women fake images")
-plt.imshow(np.transpose(vutils.make_grid(women_images.cpu().detach()[:64],padding=2, normalize=True).cpu(), (1, 2, 0)))
+plt.imshow(np.transpose(vutils.make_grid(women_images.cpu().detach()[:64], padding=2, normalize=True).cpu(), (1, 2, 0)))
 plt.show()
-
 
 men_z_average = torch.mean(fixed_noise[men], dim=0)
 women_z_average = torch.mean(fixed_noise[women], dim=0)
 difference = women_z_average - men_z_average
 
-men_to_women = netG((fixed_noise[men]+difference).reshape([-1,nz,1,1]))
+men_to_women = netG((fixed_noise[men] + difference).reshape([-1, nz, 1, 1]))
 plt.figure(figsize=(10, 10))
 plt.axis("off")
 plt.title("men & men_to_women")
-total_images_1 = torch.cat((men_images,men_to_women),dim=0)
+total_images_1 = torch.cat((men_images, men_to_women), dim=0)
 plt.imshow(np.transpose(vutils.make_grid(total_images_1.cpu().detach(),
-                                            padding=2, nrow=len(men_images) , normalize=True).cpu(), (1, 2, 0)))
+                                         padding=2, nrow=len(men_images), normalize=True).cpu(), (1, 2, 0)))
 plt.show()
 
-
-women_to_men = netG((fixed_noise[women]-difference).reshape([-1,nz,1,1]))
+women_to_men = netG((fixed_noise[women] - difference).reshape([-1, nz, 1, 1]))
 plt.figure(figsize=(10, 10))
 plt.axis("off")
 plt.title("women & women_to_men")
-total_images_2 = torch.cat((women_images,women_to_men),dim=0)
+total_images_2 = torch.cat((women_images, women_to_men), dim=0)
 plt.imshow(np.transpose(vutils.make_grid(total_images_2.cpu().detach(),
-                                         padding=2, nrow=len(women_images) , normalize=True).cpu(), (1, 2, 0)))
+                                         padding=2, nrow=len(women_images), normalize=True).cpu(), (1, 2, 0)))
 plt.show()
 
 # TODO Ideas: \
@@ -113,3 +110,6 @@ plt.show()
 # TODO Actions and tries: \
 #  - run the model for longer time, to see if the fake images look better
 #  - improve model hyper parameters?
+
+
+
