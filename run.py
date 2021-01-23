@@ -21,7 +21,8 @@ from torch.utils.data import DataLoader
 import utils
 
 
-def weights_init(m): # TODO understand and change names
+def weights_init(m):  # TODO understand and change names
+    """ Inspired from the article """
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
         nn.init.normal_(m.weight.data, 0.0, 0.02)
@@ -31,71 +32,69 @@ def weights_init(m): # TODO understand and change names
 
 
 class Generator(nn.Module):
-    def __init__(self, ngpu, nz, nz_discrete):
+    def __init__(self, nz, nz_discrete):
         super(Generator, self).__init__()
-        self.ngpu = ngpu # TODO delete?
         self.nz = nz
         self.nz_discrete = nz_discrete
         self.de_cnn = nn.Sequential(  # input: z  -> output: fake image 3x128x128
-            nn.ConvTranspose2d(self.nz + self.nz_discrete, ngf * 16,  kernel_size=4, stride=1, padding=0, bias=False),
-            nn.BatchNorm2d(ngf * 16),
+            nn.ConvTranspose2d(self.nz + self.nz_discrete, G_nfeatures * 16,  kernel_size=4, stride=1, padding=0, bias=False),
+            nn.BatchNorm2d(G_nfeatures * 16),
             nn.ReLU(True),
-            # state size. (ngf*16) x 4 x 4
-            nn.ConvTranspose2d(ngf * 16, ngf * 8, kernel_size=4, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(ngf * 8),
+            # size. (G_nfeatures*16) x 4 x 4
+            nn.ConvTranspose2d(G_nfeatures * 16, G_nfeatures * 8, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(G_nfeatures * 8),
             nn.ReLU(True),
-            # state size. (ngf*8) x 8 x 8
-            nn.ConvTranspose2d(ngf * 8, ngf * 4, kernel_size=4, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(ngf * 4),
+            # size. (G_nfeatures*8) x 8 x 8
+            nn.ConvTranspose2d(G_nfeatures * 8, G_nfeatures * 4, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(G_nfeatures * 4),
             nn.ReLU(True),
-            # state size. (ngf*4) x 16 x 16
-            nn.ConvTranspose2d(ngf * 4, ngf * 2, kernel_size=4, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(ngf * 2),
+            # size. (G_nfeatures*4) x 16 x 16
+            nn.ConvTranspose2d(G_nfeatures * 4, G_nfeatures * 2, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(G_nfeatures * 2),
             nn.ReLU(True),
-            # state size. (ngf*2) x 32 x 32
-            nn.ConvTranspose2d(ngf * 2, ngf, kernel_size=4, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(ngf),
+            # size. (G_nfeatures*2) x 32 x 32
+            nn.ConvTranspose2d(G_nfeatures * 2, G_nfeatures, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(G_nfeatures),
             nn.ReLU(True),
-            # state size. (ngf) x 64 x 64
-            nn.ConvTranspose2d(ngf, nc, kernel_size=4, stride=2, padding=1, bias=False),
+            # size. (G_nfeatures) x 64 x 64
+            nn.ConvTranspose2d(G_nfeatures, nc, kernel_size=4, stride=2, padding=1, bias=False),
             nn.Tanh()
-            # state size. (nc) x 128 x 128
+            # size. (nc) x 128 x 128
         )
 
     def forward(self, input):
-        return self.gen(input)
+        return self.de_cnn(input)
 
 
 class Discriminator(nn.Module):
-    def __init__(self, ngpu):
+    def __init__(self):
         super(Discriminator, self).__init__()
-        self.ngpu = ngpu
-        self.dis = nn.Sequential(  # input: image 3x128x128 -> output: binary decision whether the image is fake
-            nn.Conv2d(nc, ndf, kernel_size=4, stride=2, padding=1, bias=False),
+        self.cnn = nn.Sequential(  # input: image 3x128x128 -> output: binary decision whether the image is fake
+            nn.Conv2d(nc, D_nfeatures, kernel_size=4, stride=2, padding=1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
-            # state size. ndfx64x64
-            nn.Conv2d(ndf, ndf * 2, kernel_size=4, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(ndf * 2),
+            # size. ndfx64x64
+            nn.Conv2d(D_nfeatures, D_nfeatures * 2, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(D_nfeatures * 2),
             nn.LeakyReLU(0.2, inplace=True),
-            # state size. (ndf*2)x32x32
-            nn.Conv2d(ndf * 2, ndf * 4, kernel_size=4, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(ndf * 4),
+            # size. (D_nfeatures*2)x32x32
+            nn.Conv2d(D_nfeatures * 2, D_nfeatures * 4, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(D_nfeatures * 4),
             nn.LeakyReLU(0.2, inplace=True),
-            # state size. ndf*4x16x16
-            nn.Conv2d(ndf * 4, ndf * 8, kernel_size=4, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(ndf * 8),
+            # size. D_nfeatures*4x16x16
+            nn.Conv2d(D_nfeatures * 4, D_nfeatures * 8, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(D_nfeatures * 8),
             nn.LeakyReLU(0.2, inplace=True),
-            # state size. ndf*8x8x8
-            nn.Conv2d(ndf * 8, ndf * 16, kernel_size=4, stride=2, padding=0, bias=False),
-            nn.BatchNorm2d(ndf * 16),
+            # size. D_nfeatures*8x8x8
+            nn.Conv2d(D_nfeatures * 8, D_nfeatures * 16, kernel_size=4, stride=2, padding=0, bias=False),
+            nn.BatchNorm2d(D_nfeatures * 16),
             nn.LeakyReLU(0.2, inplace=True),
-            # state size. ndf*16x3x3
-            nn.Conv2d(ndf * 16, 1, kernel_size=3, stride=1, padding=0, bias=False),
+            # size. D_nfeatures*16x3x3
+            nn.Conv2d(D_nfeatures * 16, 1, kernel_size=3, stride=1, padding=0, bias=False),
             nn.Sigmoid()
         )
 
     def forward(self, input):
-        return self.dis(input)
+        return self.cnn(input)
 
 
 if __name__ == "__main__":
@@ -108,19 +107,18 @@ if __name__ == "__main__":
     dataroot = 'img_sample_pt' if not running_on_linux else os.path.join('/home/student/HW3/celebA',
                                                                          'img_align_celeba_pt')
     resize_to = 128
-
+    run = "run5"
     workers = 2  # Number of workers for dataloader
     batch_size = 128  # Batch size during training
     nc = 3  # Number of channels in the training images. For color images this is 3
     nz = 100  # Size of z latent vector (i.e. size of generator input)
     nz_discrete = 40  # Size of z latent vector (i.e. size of generator input)
-    ngf = resize_to  # Size of feature maps in generator
-    ndf = resize_to  # Size of feature maps in discriminator
-    num_epochs = 6  # Number of training epochs
+    G_nfeatures = resize_to  # Size of feature maps in generator
+    D_nfeatures = resize_to  # Size of feature maps in discriminator
+    epochs = 6  # Number of training epochs
     lr = 0.0002  # Learning rate for optimizers
     beta1 = 0.5  # Beta1 hyperparam for Adam optimizers
-    ngpu = 1  # Number of GPUs available. Use 0 for CPU mode.
-    device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     #  RUN ONLY ONCE: preprocessing and convert images to tensors
     # preprocessing_path = 'img_sample' if not running_on_linux \
@@ -130,21 +128,14 @@ if __name__ == "__main__":
     celeb_dataset = CelebDataset(dataroot)
     dataloader = DataLoader(celeb_dataset, batch_size=batch_size, shuffle=True, drop_last=False)
 
-
-    netG = Generator(ngpu, nz, nz_discrete).to(device)
-
-    # Handle multi-gpu if desired # TODO delete?
-    if (device.type == 'cuda') and (ngpu > 1):
-        netG = nn.DataParallel(netG, list(range(ngpu)))
+    netG = Generator(nz, nz_discrete).to(device)
 
     # Apply the weights_init function to randomly initialize all weights
     #  to mean=0, stdev=0.2.
     netG.apply(weights_init)
 
     # Create the Discriminator
-    netD = Discriminator(ngpu).to(device)
-    if (device.type == 'cuda') and (ngpu > 1):
-        netD = nn.DataParallel(netD, list(range(ngpu)))
+    netD = Discriminator().to(device)
     netD.apply(weights_init)
 
     # Initialize BCELoss function
@@ -164,7 +155,6 @@ if __name__ == "__main__":
     optimizerD = optim.Adam(netD.parameters(), lr=lr, betas=(beta1, 0.999))
     optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, 0.999))
 
-    ### Training Loop ###
 
     # Lists to keep track of progress
     img_list = []
@@ -174,7 +164,7 @@ if __name__ == "__main__":
 
     print("Start Training...")
     # For each epoch
-    for epoch in range(num_epochs):
+    for epoch in range(epochs):
         # For each batch in the dataloader
         for i, data in enumerate(dataloader, 0):
 
@@ -225,7 +215,7 @@ if __name__ == "__main__":
             # Output training stats
             if i % 100 == 0:
                 print('[%d/%d][%d/%d]\t,Loss_D: %.4f\tLoss_G: %.4f\t,D(x): %.4f\tD(G(z)): %.4f'
-                      % (epoch + 1, num_epochs, i, len(dataloader),
+                      % (epoch + 1, epochs, i, len(dataloader),
                          loss_D.item(), loss_G.item(), D_x, D_G_z))
 
             # Save Losses for plotting later
@@ -233,14 +223,14 @@ if __name__ == "__main__":
             D_losses.append(loss_D.item())
 
             # Check how the generator is doing by saving G's output on fixed_noise
-            if (iters % 100 == 0) or ((epoch == num_epochs - 1) and (i == len(dataloader) - 1)):
+            if (iters % 100 == 0) or ((epoch == epochs - 1) and (i == len(dataloader) - 1)):
                 with torch.no_grad():
                     fake = netG(fixed_noise).detach().cpu()
                 img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
 
             iters += 1
-    torch.save(netG, os.path.join('/home/student/HW3/celebA', f'netG_run4_add_discrete_{num_epochs}epochs'))
-    torch.save(netD, os.path.join('/home/student/HW3/celebA', f'netD_run4_add_discrete_{num_epochs}epochs'))
+    torch.save(netG, os.path.join('/home/student/HW3/celebA', f'netG_{run}_add_discrete_{epochs}epochs'))
+    torch.save(netD, os.path.join('/home/student/HW3/celebA', f'netD_{run}_add_discrete_{epochs}epochs'))
     # torch.cuda.empty_cache()
 
     plt.figure(figsize=(10, 5))
@@ -261,7 +251,7 @@ if __name__ == "__main__":
 
     html_file = HTML(ani.to_jshtml()).data
     text_file = open(os.path.join('/home/student/HW3/celebA', "html_output_file.html"), "w")
-    text_file.write(f'{html_file}')
+    text_file.write(f'{html_file},{run}')
     text_file.close()
 
     # Real Images vs. Fake Images
