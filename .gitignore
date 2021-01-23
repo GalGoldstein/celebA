@@ -4,11 +4,12 @@ img_sample
 img_sample_pt
 img_1000_samples
 test.py
+data
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-data
+
 # C extensions
 *.so
 
