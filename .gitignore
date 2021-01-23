@@ -3,7 +3,7 @@ img_align_celebA
 img_sample
 img_sample_pt
 img_1000_samples
-
+test.py
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

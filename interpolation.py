@@ -99,5 +99,5 @@ def test_interpolated_three_points():
 
 
 if __name__ == '__main__':
-    test_interpolated()
+    # test_interpolated()
     test_interpolated_three_points()

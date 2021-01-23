@@ -3,6 +3,7 @@ import os
 import platform
 from PIL import Image
 from torchvision import transforms
+import concurrent.futures
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
 
@@ -40,20 +41,22 @@ def images_preprocessing(size, path):
         torch.save(image, save_path)  # if we wish float16 >>> torch.save(image.to(dtype=torch.float16), save_path))
 
 
+def read_one_tensor(fname, path):
+    image = torch.load(os.path.join(path, fname))
+    return fname.split('.')[0], image
+
+
 def load_images(path):
     """
         load all images from path to dictionary
     :param path: path to .pt images
     :return: all images as dictionary {'000001' : torch.tensor ...}
     """
-    files_names = sorted(os.listdir(path))#[:1000] # TODO delete [:1000] and sorted
-    all_images = dict()
-    for file_name in files_names:
-        image = torch.load(os.path.join(path, file_name))
-        all_images[file_name.split('.')[0]] = image
-        # plt.imshow(image.permute(1, 2, 0))
-        # plt.show()
-    return all_images
+    files_names = sorted(os.listdir(path))  # TODO delete [:1000] and sorted
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [executor.submit(read_one_tensor, f, path) for f in files_names]
+        return {img_id: img_tensor for img_id, img_tensor in [fut.result() for fut in futures]}
 
 
 if __name__ == '__main__':
