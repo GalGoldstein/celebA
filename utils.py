@@ -4,8 +4,8 @@ import platform
 from PIL import Image
 from torchvision import transforms
 import concurrent.futures
-running_on_linux = 'Linux' in platform.platform()
 import run
+
 
 def download_data():
     """
