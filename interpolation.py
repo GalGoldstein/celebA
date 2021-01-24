@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 import torch
 import run
 from run import Generator, Discriminator
+from PIL import Image
+from torchvision import transforms
+from reverse_generator import reverse_generator
 
 """ Tow points interpolation """
 
@@ -111,6 +114,33 @@ def test_interpolated_three_points():
     p3 = torch.cat((p3_continuous, p3_discrete), dim=1)
     plot_generated_three_points(interpolate_three_points(p1, p2, p3), netG)
 
+""" Interpolate Tamir, Guy, Itay """
+
+
+def interpolate_staff():
+    files_names = ['tamir.jpg', 'itay.jpg', 'guy.jpg']
+    size = 64
+    transform = transforms.Compose([transforms.Resize(size=(size, size)),
+                                    transforms.ToTensor(),  # move to tensor and normalize to [0,1]
+                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])  # normalize to [-1,1]
+    images = list()
+    for file_name in files_names:
+        img_path = file_name
+        image = Image.open(img_path).convert('RGB')
+        images.append(transform(image))
+    images_tensor = torch.stack(images, dim=0)
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    netG = torch.load(os.path.join('/home/student/HW3/celebA', 'netG_run2_30epochs')).to(device)
+    z = reverse_generator(G=netG, images=images_tensor.to(device), nz=100, niter=20000)
+    nz = 100
+    shape = (1, nz, 1, 1)
+    p1, p2, p3 = z[0].reshape(shape), z[1].reshape(shape), z[2].reshape(shape)
+    plot_generated_three_points(interpolate_three_points(p1, p2, p3), netG)
+
+
 if __name__ == '__main__':
     # test_interpolated()
-    test_interpolated_three_points()
+    # test_interpolated_three_points()
+    # interpolate_staff()
+    pass
