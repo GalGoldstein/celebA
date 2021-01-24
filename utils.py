@@ -4,9 +4,8 @@ import platform
 from PIL import Image
 from torchvision import transforms
 import concurrent.futures
-import torchvision.transforms.functional as TF
-import matplotlib.pyplot as plt
-
+running_on_linux = 'Linux' in platform.platform()
+import run
 
 def download_data():
     """
@@ -25,8 +24,8 @@ def images_preprocessing(size, path):
     :param size: resize images to 3*size*size
     :param path: path to images folder
     """
-    if not os.path.exists(path + '_pt'):
-        os.makedirs(path + '_pt')
+    if not os.path.exists(path + f'_size{size}_pt'):
+        os.makedirs(path + f'_size{size}_pt')
 
     files_names = os.listdir(path)
     transform = transforms.Compose([transforms.Resize(size=(size, size)),
@@ -37,7 +36,7 @@ def images_preprocessing(size, path):
         img_path = os.path.join(path, file_name)
         image = Image.open(img_path).convert('RGB')
         image = transform(image)
-        save_path = os.path.join(path + '_pt', file_name.split('.')[0] + '.pt')
+        save_path = os.path.join(path + f'_size{size}_pt', file_name.split('.')[0] + '.pt')
         torch.save(image, save_path)  # if we wish float16 >>> torch.save(image.to(dtype=torch.float16), save_path))
 
 
@@ -62,6 +61,7 @@ def load_images(path):
 if __name__ == '__main__':
     # original images size == (178, 218)
     running_on_linux = 'Linux' in platform.platform()
-    path = 'img_sample' if not running_on_linux else 'img_align_celeba'
-    images_preprocessing(size=64, path=path)
+    size = run.size
+    path = 'img_sample' if not running_on_linux else f'/home/student/HW3/celebA/img_align_celeba'
+    images_preprocessing(size=size, path=path)
     # load_images(path + '_pt')

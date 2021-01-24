@@ -20,9 +20,30 @@ import platform
 from torch.utils.data import DataLoader
 import utils
 
+manualSeed = 42
 
-def weights_init(m):  # TODO understand and change names
-    """ Inspired from the article """
+running_on_linux = 'Linux' in platform.platform()
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+size = 64  # real and fake images handled as 3 x size x size
+path_to_images = 'img_sample_pt' if not running_on_linux else os.path.join('/home/student/HW3/celebA',
+                                                                     f'img_align_celeba_size{size}_pt')
+run = "run5"
+workers = 2  # Number of workers for dataloader # TODO keep?
+batch_size = 128  # During training
+nc = 3  # Number of channels of RGB
+z_ncontinuous = 100  # Size of z continuous latent vector
+z_ndiscrete = 20  # Size of z discrete (binary) latent vector
+G_nfeatures = 64  # Number of features (filters) for the generator
+D_nfeatures = 64  # Number of features (filters) for the discriminator
+epochs = 15  # Training epochs
+lr = 0.0002  # Learning rate for adam optimizers
+netG_path = os.path.join('/home/student/HW3/celebA', f'netG_{run}_discrete{z_ndiscrete}_{epochs}epochs_size{size}')
+netD_path = os.path.join('/home/student/HW3/celebA', f'netD_{run}_discrete{z_ndiscrete}_{epochs}epochs_size{size}')
+
+
+def weights_init(m):
+    """ Inspired from the article https://arxiv.org/pdf/1511.06434.pdf"""
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
         nn.init.normal_(m.weight.data, 0.0, 0.02)
@@ -32,34 +53,30 @@ def weights_init(m):  # TODO understand and change names
 
 
 class Generator(nn.Module):
-    def __init__(self, nz, nz_discrete):
+    def __init__(self, z_ncontinuous, z_ndiscrete):
         super(Generator, self).__init__()
-        self.nz = nz
-        self.nz_discrete = nz_discrete
-        self.de_cnn = nn.Sequential(  # input: z  -> output: fake image 3x128x128
-            nn.ConvTranspose2d(self.nz + self.nz_discrete, G_nfeatures * 16,  kernel_size=4, stride=1, padding=0, bias=False),
-            nn.BatchNorm2d(G_nfeatures * 16),
-            nn.ReLU(True),
-            # size. (G_nfeatures*16) x 4 x 4
-            nn.ConvTranspose2d(G_nfeatures * 16, G_nfeatures * 8, kernel_size=4, stride=2, padding=1, bias=False),
+        self.z_ncontinuous = z_ncontinuous
+        self.z_ndiscrete = z_ndiscrete
+        self.de_cnn = nn.Sequential(  # input: z  -> output: fake_images image 3x128x128
+            nn.ConvTranspose2d(self.z_ncontinuous + self.z_ndiscrete, G_nfeatures * 8,  kernel_size=4, stride=1, padding=0, bias=False),
             nn.BatchNorm2d(G_nfeatures * 8),
             nn.ReLU(True),
-            # size. (G_nfeatures*8) x 8 x 8
+            # size: (G_nfeatures*8) x 4 x 4
             nn.ConvTranspose2d(G_nfeatures * 8, G_nfeatures * 4, kernel_size=4, stride=2, padding=1, bias=False),
             nn.BatchNorm2d(G_nfeatures * 4),
             nn.ReLU(True),
-            # size. (G_nfeatures*4) x 16 x 16
+            # size: (G_nfeatures*4) x 8 x 8
             nn.ConvTranspose2d(G_nfeatures * 4, G_nfeatures * 2, kernel_size=4, stride=2, padding=1, bias=False),
             nn.BatchNorm2d(G_nfeatures * 2),
             nn.ReLU(True),
-            # size. (G_nfeatures*2) x 32 x 32
+            # size: (G_nfeatures*2) x 16 x 16
             nn.ConvTranspose2d(G_nfeatures * 2, G_nfeatures, kernel_size=4, stride=2, padding=1, bias=False),
             nn.BatchNorm2d(G_nfeatures),
             nn.ReLU(True),
-            # size. (G_nfeatures) x 64 x 64
+            # size: (G_nfeatures) x 32 x 32
             nn.ConvTranspose2d(G_nfeatures, nc, kernel_size=4, stride=2, padding=1, bias=False),
             nn.Tanh()
-            # size. (nc) x 128 x 128
+            # size: (nc) x 64 x 64
         )
 
     def forward(self, input):
@@ -69,27 +86,24 @@ class Generator(nn.Module):
 class Discriminator(nn.Module):
     def __init__(self):
         super(Discriminator, self).__init__()
-        self.cnn = nn.Sequential(  # input: image 3x128x128 -> output: binary decision whether the image is fake
+        self.cnn = nn.Sequential(  # input: image 3x64x64 -> output: binary decision whether the image is fake_images
             nn.Conv2d(nc, D_nfeatures, kernel_size=4, stride=2, padding=1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
-            # size. ndfx64x64
+            # size: (D_nfeaturesx)32x32
             nn.Conv2d(D_nfeatures, D_nfeatures * 2, kernel_size=4, stride=2, padding=1, bias=False),
             nn.BatchNorm2d(D_nfeatures * 2),
             nn.LeakyReLU(0.2, inplace=True),
-            # size. (D_nfeatures*2)x32x32
+            # size: (D_nfeatures*2)x16x16
             nn.Conv2d(D_nfeatures * 2, D_nfeatures * 4, kernel_size=4, stride=2, padding=1, bias=False),
             nn.BatchNorm2d(D_nfeatures * 4),
             nn.LeakyReLU(0.2, inplace=True),
-            # size. D_nfeatures*4x16x16
+            # size: (D_nfeatures*4)x8x8
             nn.Conv2d(D_nfeatures * 4, D_nfeatures * 8, kernel_size=4, stride=2, padding=1, bias=False),
             nn.BatchNorm2d(D_nfeatures * 8),
             nn.LeakyReLU(0.2, inplace=True),
-            # size. D_nfeatures*8x8x8
-            nn.Conv2d(D_nfeatures * 8, D_nfeatures * 16, kernel_size=4, stride=2, padding=0, bias=False),
-            nn.BatchNorm2d(D_nfeatures * 16),
-            nn.LeakyReLU(0.2, inplace=True),
-            # size. D_nfeatures*16x3x3
-            nn.Conv2d(D_nfeatures * 16, 1, kernel_size=3, stride=1, padding=0, bias=False),
+            # size: (D_nfeatures*8)x4x4
+            nn.Conv2d(D_nfeatures * 8, 1, kernel_size=4, stride=1, padding=0, bias=False),
+            # size: 1x1x1
             nn.Sigmoid()
         )
 
@@ -98,152 +112,110 @@ class Discriminator(nn.Module):
 
 
 if __name__ == "__main__":
-    manualSeed = 999  # TODO change to other seed
     print("Fixed Seed: ", manualSeed)
     random.seed(manualSeed)
     torch.manual_seed(manualSeed)
 
-    running_on_linux = 'Linux' in platform.platform()
-    dataroot = 'img_sample_pt' if not running_on_linux else os.path.join('/home/student/HW3/celebA',
-                                                                         'img_align_celeba_pt')
-    resize_to = 128
-    run = "run5"
-    workers = 2  # Number of workers for dataloader
-    batch_size = 128  # Batch size during training
-    nc = 3  # Number of channels in the training images. For color images this is 3
-    nz = 100  # Size of z latent vector (i.e. size of generator input)
-    nz_discrete = 40  # Size of z latent vector (i.e. size of generator input)
-    G_nfeatures = resize_to  # Size of feature maps in generator
-    D_nfeatures = resize_to  # Size of feature maps in discriminator
-    epochs = 6  # Number of training epochs
-    lr = 0.0002  # Learning rate for optimizers
-    beta1 = 0.5  # Beta1 hyperparam for Adam optimizers
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
     #  RUN ONLY ONCE: preprocessing and convert images to tensors
     # preprocessing_path = 'img_sample' if not running_on_linux \
-    #     else '/home/student/HW3/celebA/img_align_celeba'
-    # utils.images_preprocessing(size=128, path=preprocessing_path)
+    #     else os.path.join('/home/student/HW3/celebA', f'img_align_celeba')
+    # utils.images_preprocessing(size=size, path=preprocessing_path)
 
-    celeb_dataset = CelebDataset(dataroot)
+    celeb_dataset = CelebDataset(path_to_images)
     dataloader = DataLoader(celeb_dataset, batch_size=batch_size, shuffle=True, drop_last=False)
 
-    netG = Generator(nz, nz_discrete).to(device)
+    netG = Generator(z_ncontinuous, z_ndiscrete).to(device)
+    netG.apply(weights_init)  # Randomly initialize all weights to mean=0, stdev=0.2.
 
-    # Apply the weights_init function to randomly initialize all weights
-    #  to mean=0, stdev=0.2.
-    netG.apply(weights_init)
-
-    # Create the Discriminator
     netD = Discriminator().to(device)
     netD.apply(weights_init)
 
-    # Initialize BCELoss function
     criterion = nn.BCELoss()
 
-    # Create batch of latent vectors that we will use to visualize
-    #  the progression of the generator
-    fixed_continuous_noise = torch.randn(resize_to, nz, 1, 1, device=device)
-    fixed_discrete_noise = torch.randint(0, 2, (resize_to, nz_discrete, 1, 1), device=device)
+    # Create batch of fixed latent vectors to visualize the generator progression
+    fixed_continuous_noise = torch.randn(size, z_ncontinuous, 1, 1, device=device)
+    fixed_discrete_noise = torch.randint(0, 2, (size, z_ndiscrete, 1, 1), device=device)
     fixed_noise = torch.cat((fixed_continuous_noise, fixed_discrete_noise), dim=1)
+    img_list = []  # to visualize the generator progression
 
-    # Establish convention for real and fake labels during training
     real_label = 1.
     fake_label = 0.
-
-    # Setup Adam optimizers for both G and D
-    optimizerD = optim.Adam(netD.parameters(), lr=lr, betas=(beta1, 0.999))
-    optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, 0.999))
-
-
-    # Lists to keep track of progress
-    img_list = []
+    optimizerD = optim.Adam(netD.parameters(), lr=lr, betas=(0.5, 0.999))
+    optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(0.5, 0.999))
     G_losses = []
     D_losses = []
-    iters = 0
+    iters_for_print = 0
 
-    print("Start Training...")
-    # For each epoch
+    print("Start Training..")
     for epoch in range(epochs):
-        # For each batch in the dataloader
         for i, data in enumerate(dataloader, 0):
-
-            ############################
-            # (1) Update Discriminator: maximize log(D(x)) + log(1 - D(G(z)))
-            ###########################
-            ## Train with all-real batch
+            # Discriminator optimization problem: need to maximize log(D(x)) + log(1 - D(G(z)))
+            ## Discriminator: Train with real_images batch ##
             netD.zero_grad()
-            # Format batch
-            real_cpu = data['images_tensor'].to(device)
-            b_size = real_cpu.size(0)
-            label = torch.full((b_size,), real_label, dtype=torch.float, device=device)
-            # Forward pass real batch through D
-            output = netD(real_cpu).view(-1)
-            # Calculate loss on all-real batch
-            loss_D_real = criterion(output, label)
-            # Calculate gradients for D in backward pass
+            real_images = data['images_tensor'].to(device)
+            bs = real_images.size(0)
+            label = torch.full((bs,), real_label, dtype=torch.float, device=device)
+
+            output = netD(real_images).view(-1)  # Forward pass real_images through Discriminator
+            loss_D_real = criterion(output, label)  # Calculate loss on real_images batch
             loss_D_real.backward()
             D_x = output.mean().item()
 
-            ## Train with all-fake batch
+            ## Discriminator: Train with fake_images batch ##
             # Generate batch of latent vectors
-            continuous_noise = torch.randn(b_size, nz, 1, 1, device=device)
-            discrete_noise = torch.randint(0, 2, (b_size, nz_discrete, 1, 1), device=device)
+            continuous_noise = torch.randn(bs, z_ncontinuous, 1, 1, device=device)
+            discrete_noise = torch.randint(0, 2, (bs, z_ndiscrete, 1, 1), device=device)
             noise = torch.cat((continuous_noise, discrete_noise), dim=1)
 
-            fake = netG(noise)  # Generate fake image batch with G
+            fake_images = netG(noise)  # Generate fake_images image batch with G
             label.fill_(fake_label)
-            output = netD(fake.detach()).view(-1)  # Classify all fake batch with D
-            loss_D_fake = criterion(output, label)  # Calculate D's loss on the all-fake batch
+            output = netD(fake_images.detach()).view(-1)  # Forward pass fake_images through Discriminator
+            loss_D_fake = criterion(output, label)  # Calculate loss on fake_images batch
             loss_D_fake.backward()
-            loss_D = loss_D_real + loss_D_fake  # Add the gradients from the all-real and all-fake batches
+            loss_D = loss_D_real + loss_D_fake  # sum the loss from the real and fake images batches
             optimizerD.step()
 
-            ############################
-            # (2) Update G network: maximize log(D(G(z)))
-            ###########################
+            # Generator optimization problem: need to maximize log(D(G(z)))
             netG.zero_grad()
-            label.fill_(real_label)  # fake labels are real for generator cost
-            # Since we just updated D, perform another forward pass of all-fake batch through D
-            output = netD(fake).view(-1)
-
-            loss_G = criterion(output, label)  # Calculate G's loss based on this output
+            label.fill_(real_label)  # for the generator cost, fake_images labels are real
+            output = netD(fake_images).view(-1) # Forward pass on fake_images batch through D
+            loss_G = criterion(output, label)  # Calculate loss based on on the fake images the D catch as fake.
             loss_G.backward()
             D_G_z = output.mean().item()
             optimizerG.step()
 
-            # Output training stats
-            if i % 100 == 0:
+            if i % 200 == 0:
                 print('[%d/%d][%d/%d]\t,Loss_D: %.4f\tLoss_G: %.4f\t,D(x): %.4f\tD(G(z)): %.4f'
                       % (epoch + 1, epochs, i, len(dataloader),
                          loss_D.item(), loss_G.item(), D_x, D_G_z))
 
-            # Save Losses for plotting later
             G_losses.append(loss_G.item())
             D_losses.append(loss_D.item())
 
-            # Check how the generator is doing by saving G's output on fixed_noise
-            if (iters % 100 == 0) or ((epoch == epochs - 1) and (i == len(dataloader) - 1)):
+            # Check the generator progress on fixed_noise
+            if (iters_for_print % 500 == 0) or ((epoch == epochs - 1) and (i == len(dataloader) - 1)):
                 with torch.no_grad():
-                    fake = netG(fixed_noise).detach().cpu()
-                img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
+                    fake_images = netG(fixed_noise).detach().cpu()
+                img_list.append(vutils.make_grid(fake_images, padding=2, normalize=True))
 
-            iters += 1
-    torch.save(netG, os.path.join('/home/student/HW3/celebA', f'netG_{run}_add_discrete_{epochs}epochs'))
-    torch.save(netD, os.path.join('/home/student/HW3/celebA', f'netD_{run}_add_discrete_{epochs}epochs'))
-    # torch.cuda.empty_cache()
+            iters_for_print += 1
 
+    # save model for later use
+    torch.save(netG, netG_path)
+    torch.save(netD, netD_path)
+    # torch.cuda.empty_cache() # TODO need?
+
+    # Generator and Discriminator Loss During Training
     plt.figure(figsize=(10, 5))
     plt.title("Generator and Discriminator Loss During Training")
     plt.plot(G_losses, label="G")
     plt.plot(D_losses, label="D")
-    plt.xlabel("iterations")
+    plt.xlabel("Batch")
     plt.ylabel("Loss")
     plt.legend()
     plt.show()
 
     # Visualization of G’s progression
-    # %%capture
     fig = plt.figure(figsize=(8, 8))
     plt.axis("off")
     ims = [[plt.imshow(np.transpose(i, (1, 2, 0)), animated=True)] for i in img_list]
@@ -256,16 +228,12 @@ if __name__ == "__main__":
 
     # Real Images vs. Fake Images
     real_batch = next(iter(dataloader))
-
-    # Plot real images
     plt.figure(figsize=(15, 15))
     plt.subplot(1, 2, 1)
     plt.axis("off")
     plt.title("Real Images")
     plt.imshow(np.transpose(vutils.make_grid(real_batch['images_tensor'].to(device)[:64],
                                              padding=5, normalize=True).cpu(), (1, 2, 0)))
-
-    # Plot fake images from the last epoch
     plt.subplot(1, 2, 2)
     plt.axis("off")
     plt.title("Fake Images")

@@ -20,9 +20,9 @@ from torch.utils.data import DataLoader
 import utils
 from run import Generator, Discriminator
 from dataset import CelebDataset
+import run
 
-
-def reverse_generator(G, images, nz=100, niter=1000):
+def reverse_generator(G, images, niter=1000):
     """
         Get latent vectors for given images (Like going with the generator in the opposite direction)
         Done by MSE minimization min ||G(z)-Images||
@@ -34,7 +34,9 @@ def reverse_generator(G, images, nz=100, niter=1000):
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     criterion = nn.MSELoss()
-    z_approx = torch.randn(images.size(0), nz, 1, 1, device=device)
+    z_approx_continuous = torch.randn(images.size(0), run.z_ncontinuous, 1, 1, device=device)
+    z_approx_discrete = torch.randint(0, 2, (images.size(0), run.z_ndiscrete, 1, 1), device=device)
+    z_approx = torch.cat((z_approx_continuous, z_approx_discrete), dim=1)
     z_approx.requires_grad_(True)
     optimizer = optim.Adam([z_approx])
 
@@ -42,34 +44,40 @@ def reverse_generator(G, images, nz=100, niter=1000):
         optimizer.zero_grad()
         g_z_approx = G(z_approx)
         loss = criterion(g_z_approx, images)
-        if i and i % 100 == 0:
+        if i and i % 200 == 0:
             print(f"[Iter {i}]\t mse_g_z: {float(loss)}")
 
         # back propagation
         loss.backward()
         optimizer.step()
 
+    # TODO round the discrete components
+    z_approx_continuous = z_approx[:, :run.z_ncontinuous, :, :]
+    z_approx_discrete = z_approx[:, - run.z_ndiscrete:, :, :]
+    zeros = torch.zeros_like(z_approx_discrete)
+    ones = torch.ones_like(z_approx_discrete)
+    z_approx_discrete = torch.where(z_approx_discrete <= 0.5, zeros, ones)
+    z_approx = torch.cat((z_approx_continuous, z_approx_discrete), dim=1)
     return z_approx
 
 
 def test_reverse_generator():
     """test the reverse generator module"""
     # Set random seed for reproducibility
-    manualSeed = 999
+    manualSeed = run.manualSeed
     # manualSeed = random.randint(1, 10000) # use if you want new results
-    print("Random Seed: ", manualSeed)
+    print("Fixed Seed: ", manualSeed)
     random.seed(manualSeed)
     torch.manual_seed(manualSeed)
     running_on_linux = 'Linux' in platform.platform()
     dataroot = 'img_sample_pt' if not running_on_linux else os.path.join('/home/student/HW3/celebA',
-                                                                         'img_align_celeba_pt')
-    nz = 100
+                                                                         f'img_align_celeba_size{run.size}_pt')
     batch_size = 64
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     celeb_dataset = CelebDataset(dataroot)
     dataloader = DataLoader(celeb_dataset, batch_size=batch_size, shuffle=True, drop_last=False)
 
-    netG = torch.load(os.path.join('/home/student/HW3/celebA', 'netG_run2_30epochs')).to(device)
+    netG = torch.load(run.netG_path).to(device)
     # get real images
     images = next(iter(dataloader))['images_tensor'].to(device)
     # find the z that approximate the real images

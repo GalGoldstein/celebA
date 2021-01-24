@@ -5,6 +5,7 @@ import torchvision.utils as vutils
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
+import run
 from run import Generator, Discriminator
 
 """ Tow points interpolation """
@@ -34,17 +35,21 @@ def plot_generated(interpolated_points, G):
 def test_interpolated():
     """test the interpolated images module"""
     # Set random seed for reproducibility
-    manualSeed = 999
-    manualSeed = random.randint(1, 10000)  # use if you want new results
-    print("Random Seed: ", manualSeed)
+    manualSeed = run.manualSeed
+    print("Fixed Seed: ", manualSeed)
     random.seed(manualSeed)
     torch.manual_seed(manualSeed)
-    nz = 100
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    netG = torch.load(os.path.join('/home/student/HW3/celebA', 'netG_run2_30epochs')).to(device)
-    p1 = torch.randn(1, nz, 1, 1, device=device)
-    p2 = torch.randn(1, nz, 1, 1, device=device)
+    netG = torch.load(run.netG_path).to(device)
+
+    p1_continuous = torch.randn(1, run.z_ncontinuous, 1, 1, device=device)
+    p1_discrete = torch.randint(0, 2, (1, run.z_ndiscrete, 1, 1), device=device)
+    p1 = torch.cat((p1_continuous, p1_discrete), dim=1)
+
+    p2_continuous = torch.randn(1, run.z_ncontinuous, 1, 1, device=device)
+    p2_discrete = torch.randint(0, 2, (1, run.z_ndiscrete, 1, 1), device=device)
+    p2 = torch.cat((p2_continuous, p2_discrete), dim=1)
     plot_generated(interpolate_two_points(p1, p2), netG)
 
 
@@ -83,20 +88,28 @@ def plot_generated_three_points(interpolated_points, G):
 def test_interpolated_three_points():
     """test the interpolated images module for three points"""
     # Set random seed for reproducibility
-    manualSeed = 999
+    manualSeed = run.manualSeed
     manualSeed = random.randint(1, 10000)  # use if you want new results
-    print("Random Seed: ", manualSeed)
+    print("Fixed Seed: ", manualSeed)
     random.seed(manualSeed)
     torch.manual_seed(manualSeed)
-    nz = 100
+
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    netG = torch.load(os.path.join('/home/student/HW3/celebA', 'netG_run2_30epochs')).to(device)
-    p1 = torch.randn(1, nz, 1, 1, device=device)
-    p2 = torch.randn(1, nz, 1, 1, device=device)
-    p3 = torch.randn(1, nz, 1, 1, device=device)
-    plot_generated_three_points(interpolate_three_points(p1, p2, p3), netG)
+    netG = torch.load(run.netG_path).to(device)
 
+    p1_continuous = torch.randn(1, run.z_ncontinuous, 1, 1, device=device)
+    p1_discrete = torch.randint(0, 2, (1, run.z_ndiscrete, 1, 1), device=device)
+    p1 = torch.cat((p1_continuous, p1_discrete), dim=1)
+
+    p2_continuous = torch.randn(1, run.z_ncontinuous, 1, 1, device=device)
+    p2_discrete = torch.randint(0, 2, (1, run.z_ndiscrete, 1, 1), device=device)
+    p2 = torch.cat((p2_continuous, p2_discrete), dim=1)
+
+    p3_continuous = torch.randn(1, run.z_ncontinuous, 1, 1, device=device)
+    p3_discrete = torch.randint(0, 2, (1, run.z_ndiscrete, 1, 1), device=device)
+    p3 = torch.cat((p3_continuous, p3_discrete), dim=1)
+    plot_generated_three_points(interpolate_three_points(p1, p2, p3), netG)
 
 if __name__ == '__main__':
     # test_interpolated()
