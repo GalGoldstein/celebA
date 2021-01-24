@@ -33,6 +33,7 @@ torch.manual_seed(manualSeed)
 netG = torch.load(os.path.join('/home/student/HW3/celebA', 'netG_run2_30epochs')).to(device)
 netD = torch.load(os.path.join('/home/student/HW3/celebA', 'netD_run2_30epochs')).to(device)
 
+
 def get_attributes_file(path):
     attr_dict = dict()  # {image_id: -1/1 vector for 41 attributes}
     # txt_file = os.system(path)
@@ -47,6 +48,7 @@ def get_attributes_file(path):
 
     return attr_dict, header
 
+
 def plot_images(title, images, nrow=8):
     plt.figure(figsize=(8, 8))
     plt.axis("off")
@@ -54,6 +56,7 @@ def plot_images(title, images, nrow=8):
     plt.imshow(np.transpose(vutils.make_grid(images.cpu().detach()[:64], nrow=nrow,
                                              padding=2, normalize=True).cpu(), (1, 2, 0)))
     plt.show()
+
 
 def get_difference_vector_between_groups(A_name, B_name, A_idx, B_idx, latent_vectors):
     """
@@ -84,8 +87,6 @@ def get_difference_vector_between_groups(A_name, B_name, A_idx, B_idx, latent_ve
     plot_images(f'{B_name} and {B_name}_to_{A_name} fake images', torch.cat((B_images, B_to_A_images),
                                                                             dim=0), len(B_images))
     return difference_vector
-
-
 
 
 if __name__ == "__main__":
@@ -119,13 +120,11 @@ if __name__ == "__main__":
 #  8. how to integrate the discrete and continuous z?
 
 
-
 #  1. PCA to 2 dimensions, in order to see z latent spaces
 #  3. train only on specific group (such as 'with glasses') and see if the results preserve it
 #  4. kmeans, KNN,
 #  5. Create the backword generator (image -> z, based on the generator with the current weights)
 #  6. How can we use ATTRIBUTES, IDENTITY, LANDMARKS to get Z that present each characteristic?
-
 
 
 # TODO Actions and tries: \
