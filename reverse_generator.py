@@ -22,6 +22,7 @@ from run import Generator, Discriminator
 from dataset import CelebDataset
 import run
 
+
 def reverse_generator(G, images, niter=1000):
     """
         Get latent vectors for given images (Like going with the generator in the opposite direction)

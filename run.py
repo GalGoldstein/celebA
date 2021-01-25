@@ -20,7 +20,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 size = 64  # real and fake images handled as 3 x size x size
 path_to_images = 'img_sample_pt' if not running_on_linux else os.path.join('/home/student/HW3/celebA',
-                                                                     f'img_align_celeba_size{size}_pt')
+                                                                           f'img_align_celeba_size{size}_pt')
 run = "run5"
 batch_size = 128  # During training
 nc = 3  # Number of channels of RGB
@@ -50,7 +50,8 @@ class Generator(nn.Module):
         self.z_ncontinuous = z_ncontinuous
         self.z_ndiscrete = z_ndiscrete
         self.de_cnn = nn.Sequential(  # input: z  -> output: fake_images image 3x128x128
-            nn.ConvTranspose2d(self.z_ncontinuous + self.z_ndiscrete, G_nfeatures * 8,  kernel_size=4, stride=1, padding=0, bias=False),
+            nn.ConvTranspose2d(self.z_ncontinuous + self.z_ndiscrete, G_nfeatures * 8, kernel_size=4, stride=1,
+                               padding=0, bias=False),
             nn.BatchNorm2d(G_nfeatures * 8),
             nn.ReLU(True),
             # size: (G_nfeatures*8) x 4 x 4
@@ -169,7 +170,7 @@ def reproduce_hw3():
             # Generator optimization problem: need to maximize log(D(G(z)))
             netG.zero_grad()
             label.fill_(real_label)  # for the generator cost, fake_images labels are real
-            output = netD(fake_images).view(-1) # Forward pass on fake_images batch through D
+            output = netD(fake_images).view(-1)  # Forward pass on fake_images batch through D
             loss_G = criterion(output, label)  # Calculate loss based on on the fake images the D catch as fake.
             loss_G.backward()
             D_G_z = output.mean().item()

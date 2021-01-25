@@ -113,6 +113,7 @@ def test_interpolated_three_points():
         p3 = torch.cat((p3_continuous, p3_discrete), dim=1)
         plot_generated_three_points(interpolate_three_points(p1, p2, p3), netG)
 
+
 """ Interpolate Tamir, Guy, Itay """
 
 
