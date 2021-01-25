@@ -33,7 +33,8 @@ def get_attributes_file(path):
 
 
 def plot_images_for_animation(title, images, nrow=8):
-    return plt.imshow(np.transpose(vutils.make_grid(images.cpu().detach(), padding=2, normalize=True), (1, 2, 0)), animated=True)
+    return plt.imshow(np.transpose(vutils.make_grid(images.cpu().detach(), padding=2, normalize=True), (1, 2, 0)),
+                      animated=True)
 
 
 def plot_images(title, images, nrow=8):
@@ -67,11 +68,11 @@ def get_difference_vector_between_groups(A_name, B_name, latent_vectors_A, laten
 
     A_to_B_images = netG((latent_vectors_A + difference_vector).reshape([-1, latent_vectors_A.shape[1], 1, 1]))
     plot_images(f'{A_name} and {A_name}_to_{B_name} fake_images images', torch.cat((A_images, A_to_B_images),
-                                                                            dim=0), len(A_images))
+                                                                                   dim=0), len(A_images))
 
     B_to_A_images = netG((latent_vectors_B - difference_vector).reshape([-1, latent_vectors_B.shape[1], 1, 1]))
     plot_images(f'{B_name} and {B_name}_to_{A_name} fake_images images', torch.cat((B_images, B_to_A_images),
-                                                                            dim=0), len(B_images))
+                                                                                   dim=0), len(B_images))
     return difference_vector
 
 
@@ -98,11 +99,11 @@ def get_difference_vector_between_groups_idx(A_name, B_name, A_idx, B_idx, laten
 
     A_to_B_images = netG((latent_vectors[A_idx] + difference_vector).reshape([-1, latent_vectors.shape[1], 1, 1]))
     plot_images(f'{A_name} and {A_name}_to_{B_name} fake_images images', torch.cat((A_images, A_to_B_images),
-                                                                            dim=0), len(A_images))
+                                                                                   dim=0), len(A_images))
 
     B_to_A_images = netG((latent_vectors[B_idx] - difference_vector).reshape([-1, latent_vectors.shape[1], 1, 1]))
     plot_images(f'{B_name} and {B_name}_to_{A_name} fake_images images', torch.cat((B_images, B_to_A_images),
-                                                                            dim=0), len(B_images))
+                                                                                   dim=0), len(B_images))
     return difference_vector
 
 
@@ -154,11 +155,14 @@ def plot_images_with_approx_z(niter, images):
     plt.subplot(1, 2, 1)
     plt.axis("off")
     plt.title("Real Images")
-    plt.imshow(np.transpose(vutils.make_grid(images.to(device)[:64], nrow=2,padding=5, normalize=True).cpu(), (1, 2, 0)))
+    plt.imshow(
+        np.transpose(vutils.make_grid(images.to(device)[:64], nrow=2, padding=5, normalize=True).cpu(), (1, 2, 0)))
     plt.subplot(1, 2, 2)
     plt.axis("off")
     plt.title(f'Generated Images, {niter} iters_for_print')
-    plt.imshow(np.transpose(vutils.make_grid(generated_images_A.cpu().detach()[:64], nrow=2,padding=5, normalize=True).cpu(), (1, 2, 0)))
+    plt.imshow(
+        np.transpose(vutils.make_grid(generated_images_A.cpu().detach()[:64], nrow=2, padding=5, normalize=True).cpu(),
+                     (1, 2, 0)))
     plt.show()
     return z_approx_A
 
@@ -190,10 +194,12 @@ def create_gif_discrete_values_change():
 def get_difference_vector_between_approx_z():
     """Infer the approx. z of labeled real image, and find the difference that capture an attribute"""
     # Try to get difference vector of attributes ##
-    attributes = ['Bald', 'Big_Lips', 'Black_Hair', 'Blond_Hair', 'Blurry', 'Brown_Hair', 'Chubby', 'Eyeglasses', 'Gray_Hair', 'Male', 'Mouth_Slightly_Open', 'Mustache', 'No_Beard', 'Pale_Skin', 'Smiling', 'Straight_Hair', 'Wavy_Hair', 'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necktie', 'Young']
+    attributes = ['Bald', 'Big_Lips', 'Black_Hair', 'Blond_Hair', 'Blurry', 'Brown_Hair', 'Chubby', 'Eyeglasses',
+                  'Gray_Hair', 'Male', 'Mouth_Slightly_Open', 'Mustache', 'No_Beard', 'Pale_Skin', 'Smiling',
+                  'Straight_Hair', 'Wavy_Hair', 'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necktie', 'Young']
     niter = 20000
     for attribute in attributes:
-        non_attribute = "Non_"+attribute
+        non_attribute = "Non_" + attribute
         A_images, B_images = get_original_images_by_attribute(attribute, size)
         z_approx_A = plot_images_with_approx_z(niter, A_images)
         z_approx_B = plot_images_with_approx_z(niter, B_images)

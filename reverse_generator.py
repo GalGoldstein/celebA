@@ -46,7 +46,6 @@ def reverse_generator(G, images, niter=1000):
         loss.backward()
         optimizer.step()
 
-    # TODO round the discrete components
     z_approx_continuous = z_approx[:, :run.z_ncontinuous, :, :]
     z_approx_discrete = z_approx[:, - run.z_ndiscrete:, :, :]
     zeros = torch.zeros_like(z_approx_discrete)

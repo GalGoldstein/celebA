@@ -41,17 +41,23 @@ def images_preprocessing(size, path):
 
 
 def read_one_tensor(fname, path):
+    """
+        read one .pt tensor from disk
+    :param fname: filename like '000001.pt'
+    :param path: path for where fname is located
+    :return: the string of the file name without extension and the image tensor
+    """
     image = torch.load(os.path.join(path, fname))
     return fname.split('.')[0], image
 
 
 def load_images(path):
     """
-        load all images from path to dictionary
+        load all images from path to dictionary with preprocessing
     :param path: path to .pt images
     :return: all images as dictionary {'000001' : torch.tensor ...}
     """
-    files_names = sorted(os.listdir(path))  # TODO delete [:1000] and sorted
+    files_names = sorted(os.listdir(path))
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = [executor.submit(read_one_tensor, f, path) for f in files_names]
@@ -63,5 +69,5 @@ if __name__ == '__main__':
     running_on_linux = 'Linux' in platform.platform()
     size = run.size
     path = 'img_sample' if not running_on_linux else f'/home/student/HW3/celebA/img_align_celeba'
-    images_preprocessing(size=size, path=path)
+    # images_preprocessing(size=size, path=path)
     # load_images(path + '_pt')

@@ -103,16 +103,16 @@ class Discriminator(nn.Module):
     def forward(self, input):
         return self.cnn(input)
 
+
 def reproduce_hw3():
     print("Fixed Seed: ", manualSeed)
     random.seed(manualSeed)
     torch.manual_seed(manualSeed)
 
-
     # RUN ONLY ONCE: download data
     utils.download_data()
 
-    #  RUN ONLY ONCE: preprocessing and convert images to tensors # TODO uncomment
+    # RUN ONLY ONCE: preprocessing and convert images to tensors
     preprocessing_path = 'img_align_celeba'
     utils.images_preprocessing(size=size, path=preprocessing_path)
 
@@ -181,7 +181,7 @@ def reproduce_hw3():
 
             if i % 200 == 0:
                 print('[%d/%d][%d/%d]\t,Loss_D: %.4f\tLoss_G: %.4f\t,D(x): %.4f\tD(G(z)): %.4f'
-                      % (epoch + 1, epochs, i, len(dataloader),loss_D.item(), loss_G.item(), D_x, D_G_z))
+                      % (epoch + 1, epochs, i, len(dataloader), loss_D.item(), loss_G.item(), D_x, D_G_z))
 
             G_all_losses.append(loss_G.item())
             D_all_losses.append(loss_D.item())
