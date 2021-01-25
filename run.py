@@ -113,11 +113,11 @@ def reproduce_hw3():
     # utils.download_data()
 
     #  RUN ONLY ONCE: preprocessing and convert images to tensors # TODO uncomment
-    # preprocessing_path = 'img_align_celeba'
-    # utils.images_preprocessing(size=size, path=preprocessing_path)
+    preprocessing_path = 'img_align_celeba'
+    utils.images_preprocessing(size=size, path=preprocessing_path)
 
 
-    celeb_dataset = dataset.CelebDataset(path_to_images)
+    celeb_dataset = dataset.CelebDataset(preprocessing_path+f'_size{size}_pt')
     dataloader = DataLoader(celeb_dataset, batch_size=batch_size, shuffle=True, drop_last=False)
 
     netG = Generator(z_ncontinuous, z_ndiscrete).to(device)
