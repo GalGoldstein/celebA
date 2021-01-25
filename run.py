@@ -108,10 +108,14 @@ def reproduce_hw3():
     random.seed(manualSeed)
     torch.manual_seed(manualSeed)
 
-    #  RUN ONLY ONCE: preprocessing and convert images to tensors
-    # preprocessing_path = 'img_sample' if not running_on_linux \
-    #     else os.path.join('/home/student/HW3/celebA', f'img_align_celeba')
+
+    # RUN ONLY ONCE: download data
+    # utils.download_data()
+
+    #  RUN ONLY ONCE: preprocessing and convert images to tensors # TODO uncomment
+    # preprocessing_path = 'img_align_celeba'
     # utils.images_preprocessing(size=size, path=preprocessing_path)
+
 
     celeb_dataset = dataset.CelebDataset(path_to_images)
     dataloader = DataLoader(celeb_dataset, batch_size=batch_size, shuffle=True, drop_last=False)
@@ -134,8 +138,8 @@ def reproduce_hw3():
     fake_label = 0.
     optimizerD = optim.Adam(netD.parameters(), lr=lr, betas=(0.5, 0.999))
     optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(0.5, 0.999))
-    G_losses = []
-    D_losses = []
+    G_all_losses = []
+    D_all_losses = []
     iters_for_print = 0
 
     print("Start Training..")
@@ -180,8 +184,8 @@ def reproduce_hw3():
                 print('[%d/%d][%d/%d]\t,Loss_D: %.4f\tLoss_G: %.4f\t,D(x): %.4f\tD(G(z)): %.4f'
                       % (epoch + 1, epochs, i, len(dataloader),loss_D.item(), loss_G.item(), D_x, D_G_z))
 
-            G_losses.append(loss_G.item())
-            D_losses.append(loss_D.item())
+            G_all_losses.append(loss_G.item())
+            D_all_losses.append(loss_D.item())
 
             # Check the generator progress on fixed_noise
             if (iters_for_print % 500 == 0) or ((epoch == epochs - 1) and (i == len(dataloader) - 1)):
@@ -198,8 +202,8 @@ def reproduce_hw3():
     # Generator and Discriminator Loss During Training
     plt.figure(figsize=(10, 5))
     plt.title("Generator and Discriminator Loss During Training")
-    plt.plot(G_losses, label="G")
-    plt.plot(D_losses, label="D")
+    plt.plot(G_all_losses, label="G")
+    plt.plot(D_all_losses, label="D")
     plt.xlabel("Batch")
     plt.ylabel("Loss")
     plt.legend()
