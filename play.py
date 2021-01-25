@@ -73,6 +73,37 @@ def get_difference_vector_between_groups(A_name, B_name, latent_vectors_A, laten
                                                                             dim=0), len(B_images))
     return difference_vector
 
+def get_difference_vector_between_groups_idx(A_name, B_name, A_idx, B_idx, latent_vectors):
+    """
+    :param A_name: representative name for group A
+    :param B_name: representative name for group B
+    :param A_idx: list of indices of group A members, in the latent vectors tensors
+    :param B_idx: list of indices of group B members, in the latent vectors tensors
+    :param latent_vectors: aka fixed_noise, to reproduce the same fake_images images
+    :return: difference_vector: group_B - group_A
+    """
+    fake_images = netG(latent_vectors)
+    A_images = fake_images[A_idx]
+    B_images = fake_images[B_idx]
+
+    # plot_images(f'both groups fake_images images', fake_images)
+    plot_images(f'{A_name} fake_images images', A_images)
+    plot_images(f'{B_name} fake_images images', B_images)
+
+    A_average_vector = torch.mean(latent_vectors[A_idx], dim=0)
+    B_average_vector = torch.mean(latent_vectors[B_idx], dim=0)
+    difference_vector = B_average_vector - A_average_vector
+
+    A_to_B_images = netG((latent_vectors[A_idx] + difference_vector).reshape([-1, latent_vectors.shape[1], 1, 1]))
+    plot_images(f'{A_name} and {A_name}_to_{B_name} fake_images images', torch.cat((A_images, A_to_B_images),
+                                                                            dim=0), len(A_images))
+
+    B_to_A_images = netG((latent_vectors[B_idx] - difference_vector).reshape([-1, latent_vectors.shape[1], 1, 1]))
+    plot_images(f'{B_name} and {B_name}_to_{A_name} fake_images images', torch.cat((B_images, B_to_A_images),
+                                                                            dim=0), len(B_images))
+    return difference_vector
+
+
 def get_original_images_by_attribute(attribute, size):
     attr_path = '/datashare/list_attr_celeba.txt'
     attr_dict, header = get_attributes_file(attr_path)
@@ -97,19 +128,19 @@ def get_original_images_by_attribute(attribute, size):
     files_names = [os.path.join(dataroot + f'_size{size}_pt', image_id + ".pt") for image_id in images_id_group_B]
     B_tensors = torch.stack([torch.load(f) for f in files_names])
 
-    # plt.figure(figsize=(15, 15))
-    # plt.subplot(1, 2, 1)
-    # plt.axis("off")
-    # plt.title(f'{attribute} Images')
-    # plt.imshow(np.transpose(vutils.make_grid(A_tensors.to(device)[:64], nrow=2,
-    #                                          padding=5, normalize=True).cpu(), (1, 2, 0)))
-    #
-    # plt.subplot(1, 2, 2)
-    # plt.axis("off")
-    # plt.title(f'non {attribute} Images')
-    # plt.imshow(np.transpose(vutils.make_grid(B_tensors.to(device)[:64], nrow=2,
-    #                                          padding=5, normalize=True).cpu(), (1, 2, 0)))
-    # plt.show()
+    plt.figure(figsize=(15, 15))
+    plt.subplot(1, 2, 1)
+    plt.axis("off")
+    plt.title(f'{attribute} Images')
+    plt.imshow(np.transpose(vutils.make_grid(A_tensors.to(device)[:64], nrow=2,
+                                             padding=5, normalize=True).cpu(), (1, 2, 0)))
+
+    plt.subplot(1, 2, 2)
+    plt.axis("off")
+    plt.title(f'non {attribute} Images')
+    plt.imshow(np.transpose(vutils.make_grid(B_tensors.to(device)[:64], nrow=2,
+                                             padding=5, normalize=True).cpu(), (1, 2, 0)))
+    plt.show()
 
     return A_tensors.to(device), B_tensors.to(device)
 
@@ -156,12 +187,14 @@ def get_difference_vector_between_approx_z():
     """Infer the approx. z of labeled real image, and find the difference that capture an attribute"""
     # Try to get difference vector of attributes ##
     attributes = ['Bald', 'Big_Lips', 'Black_Hair', 'Blond_Hair', 'Blurry', 'Brown_Hair', 'Chubby', 'Eyeglasses', 'Gray_Hair', 'Male', 'Mouth_Slightly_Open', 'Mustache', 'No_Beard', 'Pale_Skin', 'Smiling', 'Straight_Hair', 'Wavy_Hair', 'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necktie', 'Young']
+    # attributes = ['Blond_Hair', 'Blurry', 'Mouth_Slightly_Open', 'Smiling', 'Straight_Hair', 'Wavy_Hair', 'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necktie', 'Young']
     niter = 20000
     for attribute in attributes:
         non_attribute = "Non_"+attribute
         A_images, B_images = get_original_images_by_attribute(attribute, size)
         z_approx_A = plot_images_with_approx_z(niter, A_images)
         z_approx_B = plot_images_with_approx_z(niter, B_images)
+
         get_difference_vector_between_groups(attribute, non_attribute, z_approx_A, z_approx_B)
 
 
@@ -169,7 +202,7 @@ if __name__ == "__main__":
 
     running_on_linux = 'Linux' in platform.platform()
     device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
-    manualSeed = run.manualSeed
+    manualSeed = 10 # run.manualSeed
     print("Fixed Seed: ", manualSeed)
     random.seed(manualSeed)
     torch.manual_seed(manualSeed)
@@ -187,17 +220,23 @@ if __name__ == "__main__":
     fixed_noise_images = netG(fixed_noise.reshape([-1, fixed_noise.shape[1], 1, 1]))
     plot_images("fake images", fixed_noise_images)
 
-    # for run1_5epochs, manualSeed = 999
-    # men = [0, 1, 11, 14, 26, 32, 41, 43, 52, 58]
-    # women = [3, 9, 10, 12, 17, 19, 21, 24, 25, 28, 37, 38, 44, 47, 56, 57, 61, 62]
+    # try approx z plots
+    # get_difference_vector_between_approx_z()
 
     # for run2_30epochs, manualSeed = 999
-    men = [8, 9, 21, 23, 24, 30, 33, 37, 38, 41]
-    women = [1, 4, 5, 12, 14, 19, 25, 27, 28, 44, 59, 61]
-    get_difference_vector_between_groups("men", "women", fixed_noise[men], fixed_noise[women])
+    # men = [8, 9, 21, 23, 24, 30, 33, 37, 38, 41]
+    # women = [1, 4, 5, 12, 14, 19, 25, 27, 28, 44, 59, 61]
+    # get_difference_vector_between_groups("men", "women", fixed_noise[men], fixed_noise[women])
 
+    # for netG_run5_discrete20_15epochs_size64, manualSeed=42
+    # blond_hair = [4,11,35,36,37,42,45]
+    # black_hair = [25,26,29,47,54]
+    # get_difference_vector_between_groups_idx("blond_hair", "black_hair", blond_hair, black_hair, fixed_noise)
 
-
+    # for netG_run5_discrete20_15epochs_size64, manualSeed=42
+    # smiling = [2,20,22,24,31,49,59,62]
+    # not_smiling = [5,7,17,26,29,32,40,53]
+    # get_difference_vector_between_groups_idx("smiling", "not_smiling", smiling, not_smiling, fixed_noise)
 
 ##################################################
 # TODO Ideas: \
