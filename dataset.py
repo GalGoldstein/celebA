@@ -8,7 +8,6 @@ import run
 
 class CelebDataset(Dataset):
     """celebA dataset class"""
-
     def __init__(self, images_path: str, create_imgs_tensors: bool = False,
                  read_from_tensor_files: bool = True, force_mem: bool = False):
         self.images = utils.load_images(images_path)  # all images as dictionary {'000001' : torch.tensor ...}

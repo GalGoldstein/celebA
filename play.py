@@ -17,9 +17,9 @@ import reverse_generator
 import matplotlib.animation as animation
 from IPython.display import HTML
 
+
 def get_attributes_file(path):
     attr_dict = dict()  # {image_id: -1/1 vector for 41 attributes}
-    # txt_file = os.system(path)
     file = open(path, "r")
     for idx, line in enumerate(file):
         if idx == 0:
@@ -33,8 +33,10 @@ def get_attributes_file(path):
 
     [plt.imshow(np.transpose(i, (1, 2, 0)), animated=True)]
 
+
 def plot_images_for_animation(title, images, nrow=8):
     return plt.imshow(np.transpose(vutils.make_grid(images.cpu().detach(), padding=2, normalize=True), (1, 2, 0)), animated=True)
+
 
 def plot_images(title, images, nrow=8):
     plt.figure(figsize=(8, 8))
@@ -43,6 +45,7 @@ def plot_images(title, images, nrow=8):
     plt.imshow(np.transpose(vutils.make_grid(images.cpu().detach()[:64], nrow=nrow,
                                              padding=2, normalize=True).cpu(), (1, 2, 0)))
     plt.show()
+
 
 def get_difference_vector_between_groups(A_name, B_name, latent_vectors_A, latent_vectors_B):
     """
@@ -72,6 +75,7 @@ def get_difference_vector_between_groups(A_name, B_name, latent_vectors_A, laten
     plot_images(f'{B_name} and {B_name}_to_{A_name} fake_images images', torch.cat((B_images, B_to_A_images),
                                                                             dim=0), len(B_images))
     return difference_vector
+
 
 def get_difference_vector_between_groups_idx(A_name, B_name, A_idx, B_idx, latent_vectors):
     """
@@ -141,24 +145,25 @@ def get_original_images_by_attribute(attribute, size):
     plt.imshow(np.transpose(vutils.make_grid(B_tensors.to(device)[:64], nrow=2,
                                              padding=5, normalize=True).cpu(), (1, 2, 0)))
     plt.show()
-
     return A_tensors.to(device), B_tensors.to(device)
+
 
 def plot_images_with_approx_z(niter, images):
     z_approx_A = reverse_generator.reverse_generator(G=netG, images=images, niter=niter)
     generated_images_A = netG(z_approx_A)
 
-    # plt.figure(figsize=(6, 6))
-    # plt.subplot(1, 2, 1)
-    # plt.axis("off")
-    # plt.title("Real Images")
-    # plt.imshow(np.transpose(vutils.make_grid(images.to(device)[:64], nrow=2,padding=5, normalize=True).cpu(), (1, 2, 0)))
-    # plt.subplot(1, 2, 2)
-    # plt.axis("off")
-    # plt.title(f'Generated Images, {niter} iters_for_print')
-    # plt.imshow(np.transpose(vutils.make_grid(generated_images_A.cpu().detach()[:64], nrow=2,padding=5, normalize=True).cpu(), (1, 2, 0)))
-    # plt.show()
+    plt.figure(figsize=(6, 6))
+    plt.subplot(1, 2, 1)
+    plt.axis("off")
+    plt.title("Real Images")
+    plt.imshow(np.transpose(vutils.make_grid(images.to(device)[:64], nrow=2,padding=5, normalize=True).cpu(), (1, 2, 0)))
+    plt.subplot(1, 2, 2)
+    plt.axis("off")
+    plt.title(f'Generated Images, {niter} iters_for_print')
+    plt.imshow(np.transpose(vutils.make_grid(generated_images_A.cpu().detach()[:64], nrow=2,padding=5, normalize=True).cpu(), (1, 2, 0)))
+    plt.show()
     return z_approx_A
+
 
 def create_gif_discrete_values_change():
     """Visualization of discrete values change. saves the gif to html_Visualization_discrete_values_change.html"""
@@ -183,11 +188,11 @@ def create_gif_discrete_values_change():
     text_file.write(f'{html_file}')
     text_file.close()
 
+
 def get_difference_vector_between_approx_z():
     """Infer the approx. z of labeled real image, and find the difference that capture an attribute"""
     # Try to get difference vector of attributes ##
     attributes = ['Bald', 'Big_Lips', 'Black_Hair', 'Blond_Hair', 'Blurry', 'Brown_Hair', 'Chubby', 'Eyeglasses', 'Gray_Hair', 'Male', 'Mouth_Slightly_Open', 'Mustache', 'No_Beard', 'Pale_Skin', 'Smiling', 'Straight_Hair', 'Wavy_Hair', 'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necktie', 'Young']
-    # attributes = ['Blond_Hair', 'Blurry', 'Mouth_Slightly_Open', 'Smiling', 'Straight_Hair', 'Wavy_Hair', 'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necktie', 'Young']
     niter = 20000
     for attribute in attributes:
         non_attribute = "Non_"+attribute
@@ -199,10 +204,9 @@ def get_difference_vector_between_approx_z():
 
 
 if __name__ == "__main__":
-
     running_on_linux = 'Linux' in platform.platform()
     device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
-    manualSeed = 10 # run.manualSeed
+    manualSeed = 10  # run.manualSeed
     print("Fixed Seed: ", manualSeed)
     random.seed(manualSeed)
     torch.manual_seed(manualSeed)
@@ -237,23 +241,3 @@ if __name__ == "__main__":
     # smiling = [2,20,22,24,31,49,59,62]
     # not_smiling = [5,7,17,26,29,32,40,53]
     # get_difference_vector_between_groups_idx("smiling", "not_smiling", smiling, not_smiling, fixed_noise)
-
-##################################################
-# TODO Ideas: \
-#  2. Vector aritmetic: try to differ between male and female, and get the difference vector
-#  7. how to define the discrete z?
-#  8. how to integrate the discrete and continuous z?
-
-
-
-#  1. PCA to 2 dimensions, in order to see z latent spaces
-#  3. train only on specific group (such as 'with glasses') and see if the results preserve it
-#  4. kmeans, KNN,
-#  5. Create the backword generator (image -> z, based on the generator with the current weights)
-#  6. How can we use ATTRIBUTES, IDENTITY, LANDMARKS to get Z that present each characteristic?
-
-
-
-# TODO Actions and tries: \
-#  - run the model for longer time, to see if the fake_images images look better
-#  - improve model hyper parameters?
