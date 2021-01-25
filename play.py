@@ -31,8 +31,6 @@ def get_attributes_file(path):
 
     return attr_dict, header
 
-    [plt.imshow(np.transpose(i, (1, 2, 0)), animated=True)]
-
 
 def plot_images_for_animation(title, images, nrow=8):
     return plt.imshow(np.transpose(vutils.make_grid(images.cpu().detach(), padding=2, normalize=True), (1, 2, 0)), animated=True)
