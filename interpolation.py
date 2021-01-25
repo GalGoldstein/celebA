@@ -5,8 +5,8 @@ import torchvision.utils as vutils
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
-import run
-from run import Generator, Discriminator
+import main
+from main import Generator, Discriminator
 from PIL import Image
 from torchvision import transforms
 from reverse_generator import reverse_generator
@@ -38,20 +38,20 @@ def plot_generated(interpolated_points, G):
 def test_interpolated():
     """test the interpolated images module"""
     # Set random seed for reproducibility
-    manualSeed = run.manualSeed
+    manualSeed = main.manualSeed
     print("Fixed Seed: ", manualSeed)
     random.seed(manualSeed)
     torch.manual_seed(manualSeed)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    netG = torch.load(run.netG_path).to(device)
+    netG = torch.load(main.netG_path).to(device)
     for i in range(20):
-        p1_continuous = torch.randn(1, run.z_ncontinuous, 1, 1, device=device)
-        p1_discrete = torch.randint(0, 2, (1, run.z_ndiscrete, 1, 1), device=device)
+        p1_continuous = torch.randn(1, main.z_ncontinuous, 1, 1, device=device)
+        p1_discrete = torch.randint(0, 2, (1, main.z_ndiscrete, 1, 1), device=device)
         p1 = torch.cat((p1_continuous, p1_discrete), dim=1)
 
-        p2_continuous = torch.randn(1, run.z_ncontinuous, 1, 1, device=device)
-        p2_discrete = torch.randint(0, 2, (1, run.z_ndiscrete, 1, 1), device=device)
+        p2_continuous = torch.randn(1, main.z_ncontinuous, 1, 1, device=device)
+        p2_discrete = torch.randint(0, 2, (1, main.z_ndiscrete, 1, 1), device=device)
         p2 = torch.cat((p2_continuous, p2_discrete), dim=1)
         plot_generated(interpolate_two_points(p1, p2), netG)
 
@@ -91,25 +91,25 @@ def plot_generated_three_points(interpolated_points, G):
 def test_interpolated_three_points():
     """test the interpolated images module for three points"""
     # Set random seed for reproducibility
-    manualSeed = run.manualSeed
+    manualSeed = main.manualSeed
     print("Fixed Seed: ", manualSeed)
     random.seed(manualSeed)
     torch.manual_seed(manualSeed)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    netG = torch.load(run.netG_path).to(device)
+    netG = torch.load(main.netG_path).to(device)
     for i in range(10):
-        p1_continuous = torch.randn(1, run.z_ncontinuous, 1, 1, device=device)
-        p1_discrete = torch.randint(0, 2, (1, run.z_ndiscrete, 1, 1), device=device)
+        p1_continuous = torch.randn(1, main.z_ncontinuous, 1, 1, device=device)
+        p1_discrete = torch.randint(0, 2, (1, main.z_ndiscrete, 1, 1), device=device)
         p1 = torch.cat((p1_continuous, p1_discrete), dim=1)
 
-        p2_continuous = torch.randn(1, run.z_ncontinuous, 1, 1, device=device)
-        p2_discrete = torch.randint(0, 2, (1, run.z_ndiscrete, 1, 1), device=device)
+        p2_continuous = torch.randn(1, main.z_ncontinuous, 1, 1, device=device)
+        p2_discrete = torch.randint(0, 2, (1, main.z_ndiscrete, 1, 1), device=device)
         p2 = torch.cat((p2_continuous, p2_discrete), dim=1)
 
-        p3_continuous = torch.randn(1, run.z_ncontinuous, 1, 1, device=device)
-        p3_discrete = torch.randint(0, 2, (1, run.z_ndiscrete, 1, 1), device=device)
+        p3_continuous = torch.randn(1, main.z_ncontinuous, 1, 1, device=device)
+        p3_discrete = torch.randint(0, 2, (1, main.z_ndiscrete, 1, 1), device=device)
         p3 = torch.cat((p3_continuous, p3_discrete), dim=1)
         plot_generated_three_points(interpolate_three_points(p1, p2, p3), netG)
 

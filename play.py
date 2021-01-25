@@ -1,6 +1,6 @@
 from __future__ import print_function
-from run import Generator, Discriminator
-import run
+from main import Generator, Discriminator
+import main
 import os
 import random
 import torch.nn.parallel
@@ -215,14 +215,14 @@ if __name__ == "__main__":
     random.seed(manualSeed)
     torch.manual_seed(manualSeed)
 
-    netG = torch.load(run.netG_path).to(device)
-    netD = torch.load(run.netD_path).to(device)
-    z_ncontinuous = run.z_ncontinuous
-    z_ndiscrete = run.z_ndiscrete
+    netG = torch.load(main.netG_path).to(device)
+    netD = torch.load(main.netD_path).to(device)
+    z_ncontinuous = main.z_ncontinuous
+    z_ndiscrete = main.z_ndiscrete
     images_amount = 64
-    size = run.size
+    size = main.size
 
-    fixed_continuous_noise = torch.randn(images_amount, run.z_ncontinuous, 1, 1, device=device)
+    fixed_continuous_noise = torch.randn(images_amount, main.z_ncontinuous, 1, 1, device=device)
     fixed_discrete_noise = torch.randint(0, 2, (images_amount, z_ndiscrete, 1, 1), device=device)
     fixed_noise = torch.cat((fixed_continuous_noise, fixed_discrete_noise), dim=1)
     fixed_noise_images = netG(fixed_noise.reshape([-1, fixed_noise.shape[1], 1, 1]))

@@ -4,7 +4,7 @@ import platform
 from PIL import Image
 from torchvision import transforms
 import concurrent.futures
-import run
+import main
 
 
 def download_data():
@@ -67,7 +67,7 @@ def load_images(path):
 if __name__ == '__main__':
     # original images size == (178, 218)
     running_on_linux = 'Linux' in platform.platform()
-    size = run.size
+    size = main.size
     path = 'img_sample' if not running_on_linux else f'/home/student/HW3/celebA/img_align_celeba'
     # images_preprocessing(size=size, path=path)
     # load_images(path + '_pt')

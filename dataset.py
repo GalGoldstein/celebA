@@ -3,7 +3,7 @@ import platform
 from torch.utils.data import Dataset
 import utils
 from torch.utils.data import DataLoader
-import run
+import main
 
 
 class CelebDataset(Dataset):
@@ -21,7 +21,7 @@ class CelebDataset(Dataset):
 
 
 if __name__ == '__main__':
-    size = run.size
+    size = main.size
     running_on_linux = 'Linux' in platform.platform()
     path = 'img_sample_pt' if not running_on_linux else os.path.join('/home/student/HW3/celebA',
                                                                      'img_align_celeba' + f'_size{size}_pt')

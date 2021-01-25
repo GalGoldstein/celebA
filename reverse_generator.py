@@ -12,9 +12,9 @@ import matplotlib.pyplot as plt
 import platform
 from torch.utils.data import DataLoader
 import utils
-from run import Generator, Discriminator
+from main import Generator, Discriminator
 from dataset import CelebDataset
-import run
+import main
 
 
 def reverse_generator(G, images, niter=1000):
@@ -29,8 +29,8 @@ def reverse_generator(G, images, niter=1000):
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     criterion = nn.MSELoss()
-    z_approx_continuous = torch.randn(images.size(0), run.z_ncontinuous, 1, 1, device=device)
-    z_approx_discrete = torch.randint(0, 2, (images.size(0), run.z_ndiscrete, 1, 1), device=device)
+    z_approx_continuous = torch.randn(images.size(0), main.z_ncontinuous, 1, 1, device=device)
+    z_approx_discrete = torch.randint(0, 2, (images.size(0), main.z_ndiscrete, 1, 1), device=device)
     z_approx = torch.cat((z_approx_continuous, z_approx_discrete), dim=1)
     z_approx.requires_grad_(True)
     optimizer = optim.Adam([z_approx])
@@ -46,8 +46,8 @@ def reverse_generator(G, images, niter=1000):
         loss.backward()
         optimizer.step()
 
-    z_approx_continuous = z_approx[:, :run.z_ncontinuous, :, :]
-    z_approx_discrete = z_approx[:, - run.z_ndiscrete:, :, :]
+    z_approx_continuous = z_approx[:, :main.z_ncontinuous, :, :]
+    z_approx_discrete = z_approx[:, - main.z_ndiscrete:, :, :]
     zeros = torch.zeros_like(z_approx_discrete)
     ones = torch.ones_like(z_approx_discrete)
     z_approx_discrete = torch.where(z_approx_discrete <= 0.5, zeros, ones)
@@ -58,19 +58,19 @@ def reverse_generator(G, images, niter=1000):
 def test_reverse_generator():
     """test the reverse generator module"""
     # Set random seed for reproducibility
-    manualSeed = run.manualSeed
+    manualSeed = main.manualSeed
     print("Fixed Seed: ", manualSeed)
     random.seed(manualSeed)
     torch.manual_seed(manualSeed)
     running_on_linux = 'Linux' in platform.platform()
     dataroot = 'img_sample_pt' if not running_on_linux else os.path.join('/home/student/HW3/celebA',
-                                                                         f'img_align_celeba_size{run.size}_pt')
+                                                                         f'img_align_celeba_size{main.size}_pt')
     batch_size = 64
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     celeb_dataset = CelebDataset(dataroot)
     dataloader = DataLoader(celeb_dataset, batch_size=batch_size, shuffle=True, drop_last=False)
 
-    netG = torch.load(run.netG_path).to(device)
+    netG = torch.load(main.netG_path).to(device)
     # get real images
     images = next(iter(dataloader))['images_tensor'].to(device)
     # find the z that approximate the real images
